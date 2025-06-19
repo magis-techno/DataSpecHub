@@ -3,15 +3,15 @@ categories:
   sensor_raw:
     desc: 基础传感器原始数据
     channels:
-      - img_cam1
-      - fisheye_original_cam9
-      - image_raw
+    - img_cam1
+    - fisheye_original_cam9
+    - image_raw
       - image_original
-      - lidar
+    - lidar
       - radar
       - radar_new_version
-      - uss
-      - dtof_lidar
+    - uss
+    - dtof_lidar
     
   # 2. 深度信息
   depth_data:
