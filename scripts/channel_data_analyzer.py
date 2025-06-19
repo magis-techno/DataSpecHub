@@ -9,6 +9,7 @@ import mimetypes
 import pandas as pd
 from typing import Dict, List, Any
 import logging
+from itertools import groupby
 
 logging.basicConfig(
     level=logging.INFO,
@@ -17,8 +18,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ChannelDataAnalyzer:
-    def __init__(self, data_dir: str):
+    def __init__(self, data_dir: str, samples_per_type: int = 3):
         self.data_dir = Path(data_dir)
+        self.samples_per_type = samples_per_type
         self.stats = {
             'directory_structure': {},
             'file_types': defaultdict(int),
@@ -28,54 +30,88 @@ class ChannelDataAnalyzer:
             'total_dirs': 0,
             'max_depth': 0,
             'avg_file_size': 0,
+            'dir_file_counts': defaultdict(lambda: defaultdict(int))  # 记录每个目录下不同类型文件的数量
         }
 
     def analyze_directory(self, current_path: Path, depth: int = 0) -> None:
         """递归分析目录结构"""
         try:
-            # 更新最大深度
             self.stats['max_depth'] = max(self.stats['max_depth'], depth)
             
+            # 收集当前目录下所有文件
+            files_in_dir = []
             for item in current_path.iterdir():
                 if item.is_file():
-                    self._analyze_file(item)
+                    files_in_dir.append(item)
                 elif item.is_dir():
                     self.stats['total_dirs'] += 1
-                    # 记录目录结构
                     rel_path = str(item.relative_to(self.data_dir))
                     self.stats['directory_structure'][rel_path] = {
                         'type': 'directory',
                         'depth': depth
                     }
                     self.analyze_directory(item, depth + 1)
+            
+            # 按文件类型分组并采样
+            if files_in_dir:
+                self._analyze_files_in_directory(files_in_dir, current_path)
+                
         except PermissionError:
             logger.warning(f"Permission denied accessing {current_path}")
         except Exception as e:
             logger.error(f"Error analyzing directory {current_path}: {e}")
 
-    def _analyze_file(self, file_path: Path) -> None:
-        """分析单个文件的特征"""
-        try:
-            self.stats['total_files'] += 1
+    def _get_file_type(self, file_path: Path) -> str:
+        """获取文件类型"""
+        mime_type, _ = mimetypes.guess_type(str(file_path))
+        if not mime_type:
+            # 如果无法判断MIME类型，使用文件扩展名
+            return file_path.suffix.lower() if file_path.suffix else 'unknown'
+        return mime_type
+
+    def _analyze_files_in_directory(self, files: List[Path], current_path: Path) -> None:
+        """分析目录中的文件，并只保留每种类型的代表性样本"""
+        # 按文件类型分组
+        files_by_type = defaultdict(list)
+        for file in files:
+            file_type = self._get_file_type(file)
+            files_by_type[file_type].append(file)
+
+        # 更新目录下文件类型统计
+        dir_path = str(current_path.relative_to(self.data_dir))
+        for file_type, files_of_type in files_by_type.items():
+            self.stats['dir_file_counts'][dir_path][file_type] = len(files_of_type)
             
+            # 对每种类型的文件进行采样
+            sampled_files = files_of_type[:self.samples_per_type]
+            
+            # 更新总体统计信息
+            self.stats['total_files'] += len(files_of_type)  # 总数统计所有文件
+            self.stats['file_types'][file_type] += len(files_of_type)
+            
+            # 只为采样的文件添加详细信息
+            for file in sampled_files:
+                self._analyze_sampled_file(file)
+
+    def _analyze_sampled_file(self, file_path: Path) -> None:
+        """分析采样的文件"""
+        try:
             # 获取文件大小
             file_size = file_path.stat().st_size
             size_mb = file_size / (1024 * 1024)  # 转换为MB
             
-            # 获取文件类型
-            mime_type, _ = mimetypes.guess_type(str(file_path))
-            mime_type = mime_type if mime_type else 'unknown'
-            
-            # 获取文件扩展名
+            # 获取文件类型和扩展名
+            mime_type = self._get_file_type(file_path)
             extension = file_path.suffix.lower()
             
-            # 更新统计信息
-            self.stats['file_types'][mime_type] += 1
+            # 更新文件扩展名统计
             self.stats['file_extensions'][extension] += 1
-            self.stats['file_sizes'][str(file_path.relative_to(self.data_dir))] = size_mb
             
-            # 记录文件结构
+            # 记录文件大小
             rel_path = str(file_path.relative_to(self.data_dir))
+            self.stats['file_sizes'][rel_path] = size_mb
+            
+            # 在目录结构中记录采样的文件
             self.stats['directory_structure'][rel_path] = {
                 'type': 'file',
                 'size_mb': size_mb,
@@ -90,7 +126,7 @@ class ChannelDataAnalyzer:
         """计算汇总统计信息"""
         if self.stats['total_files'] > 0:
             total_size = sum(self.stats['file_sizes'].values())
-            self.stats['avg_file_size'] = total_size / self.stats['total_files']
+            self.stats['avg_file_size'] = total_size / len(self.stats['file_sizes'])
 
     def generate_report(self) -> Dict[str, Any]:
         """生成分析报告"""
@@ -104,7 +140,8 @@ class ChannelDataAnalyzer:
             },
             'file_types': dict(self.stats['file_types']),
             'file_extensions': dict(self.stats['file_extensions']),
-            'directory_structure': self.stats['directory_structure']
+            'directory_structure': self.stats['directory_structure'],
+            'directory_file_counts': dict(self.stats['dir_file_counts'])
         }
 
     def save_report(self, output_dir: str) -> None:
@@ -124,6 +161,19 @@ class ChannelDataAnalyzer:
                                         columns=['size_mb'])
         df_sizes.to_csv(output_path / 'file_sizes.csv')
         
+        # 保存目录文件类型统计
+        dir_stats = []
+        for dir_path, type_counts in self.stats['dir_file_counts'].items():
+            for file_type, count in type_counts.items():
+                dir_stats.append({
+                    'directory': dir_path,
+                    'file_type': file_type,
+                    'count': count
+                })
+        df_dir_stats = pd.DataFrame(dir_stats)
+        if not df_dir_stats.empty:
+            df_dir_stats.to_csv(output_path / 'directory_type_statistics.csv', index=False)
+        
         logger.info(f"Analysis report saved to {output_path}")
 
 def main():
@@ -131,11 +181,13 @@ def main():
     parser.add_argument('data_dir', help='Path to the data directory to analyze')
     parser.add_argument('--output', '-o', default='analysis_output',
                        help='Directory to save analysis results')
+    parser.add_argument('--samples', '-s', type=int, default=3,
+                       help='Number of sample files to keep per type in each directory')
     
     args = parser.parse_args()
     
     try:
-        analyzer = ChannelDataAnalyzer(args.data_dir)
+        analyzer = ChannelDataAnalyzer(args.data_dir, args.samples)
         analyzer.analyze_directory(Path(args.data_dir))
         analyzer.save_report(args.output)
         logger.info("Analysis completed successfully")
