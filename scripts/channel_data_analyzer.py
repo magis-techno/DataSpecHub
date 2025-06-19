@@ -18,10 +18,12 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 class ChannelDataAnalyzer:
-    def __init__(self, data_dir: str, samples_per_type: int = 3, skip_levels: Optional[List[int]] = None):
+    def __init__(self, data_dir: str, samples_per_type: int = 3, skip_levels: Optional[List[int]] = None, 
+                 include_unknown: bool = False):
         self.data_dir = Path(data_dir)
         self.samples_per_type = samples_per_type
         self.skip_levels = skip_levels or []  # 要忽略的目录层级（0为根目录）
+        self.include_unknown = include_unknown  # 是否包含未知类型的文件
         self.stats = {
             'directory_structure': {},
             'file_types': defaultdict(int),
@@ -31,7 +33,8 @@ class ChannelDataAnalyzer:
             'total_dirs': 0,
             'max_depth': 0,
             'avg_file_size': 0,
-            'dir_file_counts': defaultdict(lambda: defaultdict(int))
+            'dir_file_counts': defaultdict(lambda: defaultdict(int)),
+            'skipped_unknown_files': 0  # 记录被跳过的未知类型文件数量
         }
 
     def _get_effective_path(self, path: Path) -> Optional[Path]:
@@ -120,11 +123,15 @@ class ChannelDataAnalyzer:
         except Exception as e:
             logger.error(f"Error analyzing directory {current_path}: {e}")
 
-    def _get_file_type(self, file_path: Path) -> str:
-        """获取文件类型"""
+    def _get_file_type(self, file_path: Path) -> Optional[str]:
+        """获取文件类型，如果是未知类型且设置为不包含，则返回None"""
         mime_type, _ = mimetypes.guess_type(str(file_path))
         if not mime_type:
-            return file_path.suffix.lower() if file_path.suffix else 'unknown'
+            # 如果无法判断MIME类型，使用文件扩展名
+            extension = file_path.suffix.lower()
+            if not extension:
+                return None if not self.include_unknown else 'unknown'
+            return extension if self.include_unknown else None
         return mime_type
 
     def _analyze_files_in_directory(self, files: List[Path], effective_path: Path) -> None:
@@ -133,6 +140,9 @@ class ChannelDataAnalyzer:
         files_by_type = defaultdict(list)
         for file in files:
             file_type = self._get_file_type(file)
+            if file_type is None:  # 未知类型且设置为不包含
+                self.stats['skipped_unknown_files'] += 1
+                continue
             files_by_type[file_type].append(file)
 
         # 更新目录下文件类型统计
@@ -154,12 +164,15 @@ class ChannelDataAnalyzer:
     def _analyze_sampled_file(self, file_path: Path) -> None:
         """分析采样的文件"""
         try:
+            # 获取文件类型和扩展名
+            mime_type = self._get_file_type(file_path)
+            if mime_type is None:  # 未知类型且设置为不包含
+                return
+                
             # 获取文件大小
             file_size = file_path.stat().st_size
             size_mb = file_size / (1024 * 1024)
             
-            # 获取文件类型和扩展名
-            mime_type = self._get_file_type(file_path)
             extension = file_path.suffix.lower()
             
             # 更新文件扩展名统计
@@ -195,7 +208,8 @@ class ChannelDataAnalyzer:
                 'total_directories': self.stats['total_dirs'],
                 'max_directory_depth': self.stats['max_depth'],
                 'average_file_size_mb': round(self.stats['avg_file_size'], 2),
-                'skipped_levels': self.skip_levels
+                'skipped_levels': self.skip_levels,
+                'skipped_unknown_files': self.stats['skipped_unknown_files']
             },
             'file_types': dict(self.stats['file_types']),
             'file_extensions': dict(self.stats['file_extensions']),
@@ -244,11 +258,18 @@ def main():
                        help='Number of sample files to keep per type in each directory')
     parser.add_argument('--skip-levels', type=int, nargs='+', default=[1],
                        help='Directory levels to skip (0-based, default is [1] to skip the second level)')
+    parser.add_argument('--include-unknown', action='store_true',
+                       help='Include files with unknown types in the analysis')
     
     args = parser.parse_args()
     
     try:
-        analyzer = ChannelDataAnalyzer(args.data_dir, args.samples, args.skip_levels)
+        analyzer = ChannelDataAnalyzer(
+            args.data_dir, 
+            args.samples, 
+            args.skip_levels,
+            args.include_unknown
+        )
         analyzer.analyze_directory(Path(args.data_dir))
         analyzer.save_report(args.output)
         logger.info("Analysis completed successfully")
