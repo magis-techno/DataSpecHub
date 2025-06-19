@@ -1,0 +1,53 @@
+meta:
+  channel: img_cam1
+  version: 1.0.0
+  category: sensor_raw
+  description: "普通摄像头图像数据"
+  
+schema:
+  data_format: 
+    type: image
+    encoding: [jpeg, png, raw]
+    resolution:
+      width: 1920
+      height: 1080
+    color_space: RGB
+    bit_depth: 8
+  
+  timestamp:
+    type: int64
+    unit: nanoseconds
+    description: "图像采集时间戳"
+    
+  calibration:
+    intrinsic_matrix: 
+      type: array
+      shape: [3, 3]
+      description: "相机内参矩阵"
+    distortion_coeffs:
+      type: array
+      shape: [5]
+      description: "畸变系数"
+      
+  metadata:
+    camera_id: 
+      type: string
+      description: "相机唯一标识"
+    exposure_time:
+      type: float
+      unit: milliseconds
+      description: "曝光时间"
+    iso:
+      type: int
+      description: "ISO感光度"
+
+validation:
+  file_extensions: [".jpg", ".png", ".raw"]
+  max_file_size: "10MB"
+  required_fields: ["timestamp", "camera_id"]
+  
+lifecycle:
+  status: stable
+  created_at: "2024-01-01"
+  updated_at: "2024-01-01"
+  maintainer: "sensor-team@company.com" 

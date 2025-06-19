@@ -1,0 +1,5 @@
+meta:
+  channel: radar
+  version: 2.0.0
+schema:
+  encoding: pcap

@@ -1,0 +1,358 @@
+name: Channel Specification Validation
+
+on:
+  pull_request:
+    paths:
+      - 'channels/**'
+      - 'consumers/**'
+      - 'bundles/**'
+      - 'taxonomy/**'
+      - 'compatibility/**'
+  push:
+    branches: [main]
+
+jobs:
+  validate-pr-format:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Validate PR title format
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          if [[ ! "$PR_TITLE" =~ ^\[DATA_SPEC\] ]]; then
+            echo "❌ PR title must start with [DATA_SPEC]"
+            echo "Current title: $PR_TITLE"
+            echo "Expected format: [DATA_SPEC] radar v1.2.0: add fuzzy_velocity"
+            exit 1
+          fi
+          echo "✅ PR title format is valid"
+          
+      - name: Extract and validate issue ID
+        id: issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          ISSUE_ID=$(echo "$PR_BODY" | grep -oE 'DATA_SPEC-[0-9]+' | head -1 || echo "")
+          
+          if [ -z "$ISSUE_ID" ]; then
+            echo "⚠️ No issue ID found in PR body"
+            echo "Please reference the related issue (e.g., DATA_SPEC-123)"
+          else
+            echo "✅ Found issue ID: $ISSUE_ID"
+            echo "issue_id=$ISSUE_ID" >> $GITHUB_OUTPUT
+          fi
+
+  validate-specs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Validate channel specifications
+        run: |
+          python scripts/validate_channels.py
+          
+      - name: Validate consumer requirements
+        run: |
+          python scripts/validate_consumers.py
+          
+      - name: Validate bundles
+        run: |
+          python scripts/validate_bundles.py
+          
+      - name: Check taxonomy consistency
+        run: |
+          python scripts/validate_taxonomy.py
+          
+      - name: Validate sample data
+        run: |
+          python scripts/validate_samples.py
+          
+      - name: Generate validation report
+        run: |
+          python scripts/generate_validation_report.py
+          
+      - name: Upload validation report
+        uses: actions/upload-artifact@v3
+        with:
+          name: validation-report
+          path: validation-report.html
+
+  compatibility-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 获取完整历史用于比较
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Check compatibility matrix
+        id: compat_check
+        run: |
+          python scripts/check_compatibility.py \
+            --base-ref origin/main \
+            --head-ref ${{ github.sha }} \
+            --matrix compatibility/consumer_matrix.yaml \
+            --output compatibility-report.json
+            
+      - name: Analyze breaking changes
+        id: breaking_changes
+        run: |
+          python scripts/analyze_breaking_changes.py \
+            --compatibility-report compatibility-report.json \
+            --output breaking-changes.json
+            
+      - name: Check production locks
+        run: |
+          python scripts/check_production_locks.py \
+            --compatibility-report compatibility-report.json \
+            --fail-on-conflict
+            
+      - name: Generate impact analysis
+        run: |
+          python scripts/generate_impact_analysis.py \
+            --breaking-changes breaking-changes.json \
+            --output impact-analysis.md
+            
+      - name: Upload compatibility reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: compatibility-reports
+          path: |
+            compatibility-report.json
+            breaking-changes.json
+            impact-analysis.md
+
+  consumer-notification:
+    runs-on: ubuntu-latest
+    needs: [compatibility-check]
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Download compatibility reports
+        uses: actions/download-artifact@v3
+        with:
+          name: compatibility-reports
+          
+      - name: Notify affected consumers
+        run: |
+          python scripts/notify_consumers.py \
+            --compatibility-report compatibility-report.json \
+            --pr-number ${{ github.event.pull_request.number }} \
+            --github-token ${{ secrets.GITHUB_TOKEN }}
+            
+      - name: Comment PR with impact analysis
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const fs = require('fs');
+            
+            // 读取影响分析报告
+            let impactAnalysis = '';
+            try {
+              impactAnalysis = fs.readFileSync('impact-analysis.md', 'utf8');
+            } catch (error) {
+              impactAnalysis = '📊 No significant impact detected.';
+            }
+            
+            // 读取兼容性报告
+            let compatReport = {};
+            try {
+              compatReport = JSON.parse(fs.readFileSync('compatibility-report.json', 'utf8'));
+            } catch (error) {
+              console.log('No compatibility report found');
+            }
+            
+            let comment = '## 🔍 Channel Specification Impact Analysis\n\n';
+            
+            // 添加Issue链接
+            const prBody = context.payload.pull_request.body || '';
+            const issueMatch = prBody.match(/DATA_SPEC-\d+/);
+            if (issueMatch) {
+              comment += `📋 **Related Issue**: ${issueMatch[0]}\n\n`;
+            }
+            
+            // 添加兼容性检查结果
+            if (compatReport.breaking_changes && compatReport.breaking_changes.length > 0) {
+              comment += '⚠️ **Breaking Changes Detected**\n\n';
+              comment += compatReport.breaking_changes.map(change => 
+                `- ${change.channel}: ${change.description}`
+              ).join('\n') + '\n\n';
+            } else {
+              comment += '✅ **No Breaking Changes Detected**\n\n';
+            }
+            
+            // 添加影响分析
+            comment += impactAnalysis;
+            
+            // 添加验证报告链接
+            comment += `\n\n📊 [View detailed validation report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})\n`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+
+  auto-changelog:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Generate CHANGELOG updates
+        run: |
+          python scripts/generate_changelog.py \
+            --since-ref HEAD~1 \
+            --output-dir .
+            
+      - name: Commit CHANGELOG updates
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if git diff --quiet CHANGELOG.md; then
+            echo "No CHANGELOG updates needed"
+          else
+            git add CHANGELOG.md
+            git commit -m "Auto-update CHANGELOG [skip ci]"
+            git push
+          fi
+
+  auto-generate-docs:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install mkdocs mkdocs-material
+          
+      - name: Generate channel documentation
+        run: |
+          python scripts/generate_docs.py
+          
+      - name: Build MkDocs site
+        run: |
+          mkdocs build
+          
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site
+          
+      - name: Commit generated docs
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          if git diff --quiet docs/; then
+            echo "No documentation updates needed"
+          else
+            git add docs/
+            git commit -m "Auto-generate channel documentation [skip ci]"
+            git push
+          fi
+
+  release-preparation:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, '[prepare-release]')
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          
+      - name: Generate release bundles
+        run: |
+          # 获取当前周数作为版本号
+          WEEK_VERSION=$(date +"%Y.%U")
+          echo "Preparing release for week $WEEK_VERSION"
+          
+          # 为每个主要消费者创建Bundle
+          python scripts/bundle_manager.py create \
+            --from-consumer autonomous_driving \
+            --name weekly_release \
+            --version $WEEK_VERSION
+            
+          python scripts/bundle_manager.py create \
+            --from-consumer perception_training \
+            --name training_release \
+            --version $WEEK_VERSION
+            
+      - name: Create release tag
+        run: |
+          WEEK_VERSION=$(date +"%Y.%U")
+          git tag "release/$WEEK_VERSION"
+          git push origin "release/$WEEK_VERSION"
+          
+      - name: Create GitHub Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: "release/$(date +%Y.%U)"
+          release_name: "Weekly Release $(date +%Y.%U)"
+          body: |
+            ## 🚀 Weekly Release $(date +%Y.%U)
+            
+            This release includes all channel specification changes merged during week $(date +%U) of $(date +%Y).
+            
+            ### 📦 Bundles Created
+            - `weekly_release:$(date +%Y.%U)` - For autonomous driving systems
+            - `training_release:$(date +%Y.%U)` - For perception training
+            
+            ### 📋 Release Notes
+            See [CHANGELOG.md](CHANGELOG.md) for detailed changes.
+            
+            ### 🔗 Documentation
+            - [Channel Governance Guide](docs/CHANNEL_GOVERNANCE_GUIDE.md)
+            - [Bundle Usage Examples](docs/BUNDLE_USAGE_EXAMPLES.md)
+          draft: false
+          prerelease: false 

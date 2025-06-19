@@ -1,0 +1,7 @@
+meta:
+  channel: radar
+  version: 2.0.0
+  status: stable
+schema_ref: ../spec-2.0.0.yaml
+lifecycle:
+  status: stable

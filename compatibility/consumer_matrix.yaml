@@ -1,0 +1,136 @@
+# 消费者兼容性矩阵
+# 用于CI检查规格变更是否破坏现有生产/发布版本的兼容性
+
+# 消费者定义
+consumers:
+  autonomous_driving:
+    owner: "ad-team@company.com"
+    production_environments: ["staging", "production"]
+    critical_channels: ["img_cam1", "lidar", "utils", "ego_pose"]
+    
+  perception_training:
+    owner: "perception-team@company.com"
+    production_environments: ["training", "validation"]
+    critical_channels: ["img_cam1", "lidar", "radar.v2", "object_array_fusion"]
+    
+  simulation_platform:
+    owner: "sim-team@company.com"
+    production_environments: ["sim-prod"]
+    critical_channels: ["img_cam1", "radar.v1", "radar.v2", "utils"]
+
+# 兼容性规则
+compatibility_rules:
+  # 主版本变更规则
+  major_version_change:
+    requires_approval_from: ["data-steward", "consumer-representative"]
+    min_deprecation_period: "2_release_cycles"
+    requires_migration_guide: true
+    
+  # 次版本变更规则  
+  minor_version_change:
+    requires_approval_from: ["data-steward"]
+    backward_compatible: true
+    
+  # 修订版本变更规则
+  patch_version_change:
+    auto_approve: true
+    backward_compatible: true
+
+# 当前生产版本锁定（SPEC版本锁定）
+production_locks:
+  autonomous_driving:
+    img_cam1: "1.2.3"
+    lidar: "2.1.0"
+    radar.v2: "2.0.5"
+    utils: "1.3.2"
+    ego_pose: "1.1.0"
+    locked_until: "2025-07-01"  # 生产锁定期
+    
+  perception_training:
+    img_cam1: "1.2.3"
+    lidar: "2.1.0"
+    radar.v2: "2.0.5"
+    object_array_fusion: "1.4.0"
+    locked_until: "2025-06-30"
+    
+  simulation_platform:
+    img_cam1: "1.2.2"  # 仿真环境使用较老版本
+    radar.v1: "1.0.0"
+    radar.v2: "2.0.4"
+    utils: "1.3.1"
+    locked_until: "2025-08-01"
+
+# 破坏性变更检查规则
+breaking_change_checks:
+  # 字段删除
+  field_removal:
+    severity: "critical"
+    requires_deprecation: true
+    min_deprecation_period: "3_release_cycles"
+    
+  # 数据格式变更
+  format_change:
+    severity: "high"
+    requires_migration_guide: true
+    requires_dual_write: true
+    
+  # 枚举值变更
+  enum_change:
+    severity: "medium"
+    backward_compatible_additions: true
+    removals_require_deprecation: true
+    
+  # 约束变更
+  constraint_change:
+    # 更严格的约束是破坏性的
+    stricter_constraints: "breaking"
+    # 更宽松的约束是兼容的
+    looser_constraints: "compatible"
+
+# 自动检查配置
+automated_checks:
+  schema_validation:
+    enabled: true
+    fail_on_breaking_changes: true
+    
+  sample_data_validation:
+    enabled: true
+    require_samples_for_new_channels: true
+    # 注意：只检查样本格式，不检查数量
+    
+  consumer_impact_analysis:
+    enabled: true
+    check_production_locks: true
+    notify_affected_consumers: true
+    
+  documentation_checks:
+    enabled: true
+    require_changelog_entry: true
+    require_migration_guide_for_breaking_changes: true
+
+# 通知配置
+notifications:
+  breaking_changes:
+    notify_consumers: true
+    notify_data_stewards: true
+    create_tracking_issue: true
+    
+  consumer_lock_conflicts:
+    notify_release_manager: true
+    block_merge: true
+    
+  deprecation_warnings:
+    notify_consumers: 30  # 30天前通知
+    final_warning: 7      # 7天前最终警告
+
+# 例外处理
+exceptions:
+  emergency_fixes:
+    allowed_by: ["data-steward", "release-manager"]
+    requires_post_review: true
+    max_duration: "24_hours"
+    
+  experimental_channels:
+    prefix: "experimental_"
+    relaxed_compatibility_rules: true
+    no_production_lock: true 
