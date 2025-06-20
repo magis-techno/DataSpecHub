@@ -1,0 +1,74 @@
+meta:
+  channel: utils_slam
+  version: 1.1.0
+  release_date: "2024-08-01"
+  release_type: minor
+  
+spec_ref: ./spec-1.1.0.yaml
+
+changes:
+  - type: "fix"
+    description: "修复字段命名：enu_pose改为utm_pose，与实际坐标系相符"
+  - type: "feature"
+    description: "新增utm_zone_info字段，包含zone_id、hemisphere、datum"
+  - type: "feature"
+    description: "恢复与全局坐标系的联系，支持坐标转换"
+  - type: "feature"
+    description: "新增quality_metrics字段，包含位置精度、方向精度、地图置信度"
+  - type: "feature"
+    description: "新增tracking_status状态跟踪"
+  - type: "improvement"
+    description: "增大文件大小限制以支持新增字段"
+
+compatibility:
+  backward_compatible: false  # 字段重命名破坏兼容性
+  breaking_changes:
+    - field: "enu_pose"
+      change: "重命名为utm_pose"
+      reason: "修正不准确的命名"
+      migration: "将enu_pose字段重命名为utm_pose，数据内容保持不变"
+  deprecated_fields: []
+  migration_guide: |
+    1. 将数据中的"enu_pose"字段重命名为"utm_pose"
+    2. 添加"utm_zone_info"字段，包含当前数据的UTM区域信息
+    3. 添加"quality_metrics"字段（可选，用于新数据）
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 100%
+  format_compliance: 100%
+  
+performance:
+  processing_time: "22ms"  # 轻微优化
+  accuracy: "±0.3m"       # 提升的位置精度
+  
+fixes_applied:
+  - issue: "enu_pose字段命名不准确"
+    resolution: "重命名为utm_pose"
+    status: "resolved"
+  - issue: "缺失UTM zone_id字段"
+    resolution: "新增utm_zone_info完整字段组"
+    status: "resolved"
+  - issue: "缺少数据质量指标"
+    resolution: "新增quality_metrics字段"
+    status: "resolved"
+
+coordinate_system_fix:
+  before: 
+    field_name: "enu_pose"
+    coordinate_system: "UTM (但命名错误)"
+    global_reference: "缺失"
+  after:
+    field_name: "utm_pose"
+    coordinate_system: "UTM (命名正确)"
+    global_reference: "完整的zone_id和hemisphere信息"
+    benefits:
+      - "支持全局坐标转换"
+      - "明确的坐标系语义"
+      - "与标准UTM规范一致"
+  
+lifecycle:
+  status: stable
+  prev_version: "1.0.0"
+  next_version: "1.2.0"
+  support_until: "2025-08-01" 

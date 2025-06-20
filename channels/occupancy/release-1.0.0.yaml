@@ -1,0 +1,77 @@
+version: 1.0.0
+channel: occupancy
+release_date: "2024-12-19"
+
+release_info:
+  type: "initial_release"
+  title: "Occupancy标注通道首次发布"
+  description: "发布通用障碍物自动化标注占据栅格数据通道，支持多种数据格式和坐标系"
+
+performance_metrics:
+  annotation_quality:
+    accuracy: 89.2
+    precision: 91.5
+    recall: 87.8
+    f1_score: 89.6
+    description: "在验证数据集上的标注准确性指标"
+  
+  processing_speed:
+    fps: 10.0
+    latency_ms: 100
+    description: "实时处理能力，每秒处理帧数"
+  
+  data_characteristics:
+    grid_resolution: 0.1  # meters per pixel
+    coverage_area: "100x100米范围"
+    file_size_avg: "2.5MB"
+    compression_ratio: 85
+
+algorithm_info:
+  name: "OccupancyNet-v1.0"
+  type: "深度学习占据栅格预测"
+  training_data: "城市道路场景数据集v1.2"
+  model_parameters: "12.5M参数"
+  inference_platform: ["GPU", "CPU"]
+
+compatibility:
+  dependent_channels: 
+    - image_original: ">=1.0.0"
+    - utils_slam: ">=1.0.0"
+  output_consumers:
+    - autonomous_driving: "路径规划模块"
+    - traffic_light: "场景理解模块"
+  
+  hardware_requirements:
+    min_memory: "2GB"
+    min_gpu_memory: "4GB"
+    recommended_gpu: "RTX 3070或以上"
+
+data_pipeline:
+  input_sensors: 
+    - "前置相机"
+    - "激光雷达"
+    - "GPS/IMU"
+  processing_stages:
+    - "多传感器融合"
+    - "深度估计"
+    - "语义分割"
+    - "占据栅格生成"
+  output_format: "PNG图像 + JSON元数据"
+
+deployment_info:
+  environments: ["开发", "测试", "生产"]
+  rollout_strategy: "灰度发布"
+  monitoring_metrics:
+    - "标注延迟"
+    - "准确性评分"
+    - "系统资源使用率"
+  
+  known_limitations:
+    - "动态物体追踪精度有限"
+    - "恶劣天气条件下性能下降"
+    - "对小物体检测能力不足"
+
+security:
+  data_classification: "内部"
+  access_control: "perception-team"
+  compliance: ["数据安全规范v2.1"] 

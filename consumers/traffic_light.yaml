@@ -1,8 +1,0 @@
-meta:
-  consumer: traffic_light
-  owner: traffic-data@company.com
-requirements:
-  - channel: image_raw
-    version: ">=1.0.0"
-    required: true
-    on_missing: fail

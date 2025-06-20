@@ -1,0 +1,46 @@
+meta:
+  channel: image_original
+  version: 1.0.0
+  category: sensor_raw
+  description: "原始JPEG图像数据，来自camera_encoded_0.bag，车端4Mbps压缩"
+  
+schema:
+  data_format: 
+    type: image
+    encoding: [jpeg]
+    compression:
+      bitrate: 4000000  # 4Mbps
+      quality: standard
+    average_file_size: "2.0MB"
+    color_space: RGB
+    bit_depth: 8
+  
+  timestamp:
+    type: int64
+    unit: nanoseconds
+    description: "图像采集时间戳"
+      
+  metadata:
+    data_source:
+      type: string
+      value: "camera_encoded_0.bag"
+      description: "数据来源话题"
+    camera_position: 
+      type: string
+      description: "相机位置标识"
+
+# 存储映射信息 - 实际数据路径映射
+storage_mapping:
+  description: "从camera_encoded_0.bag话题提取的图像数据"
+  source_topic: "camera_encoded_0.bag"
+
+validation:
+  file_extensions: [".jpg"]
+  max_file_size: "8MB"
+  average_file_size: "2.0MB"
+  
+lifecycle:
+  status: stable
+  created_at: "2024-01-01"
+  updated_at: "2024-01-01"
+  maintainer: "sensor-team@company.com" 

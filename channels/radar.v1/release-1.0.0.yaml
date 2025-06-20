@@ -1,7 +1,0 @@
-meta:
-  channel: radar
-  version: 1.0.0
-  status: legacy
-schema_ref: ../spec-1.0.0.yaml
-lifecycle:
-  status: legacy

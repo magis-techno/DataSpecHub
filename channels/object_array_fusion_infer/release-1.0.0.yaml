@@ -1,0 +1,42 @@
+meta:
+  channel: object_array_fusion_infer
+  version: 1.0.0
+  release_date: "2024-01-15"
+  release_type: major
+  
+spec_ref: ./spec-1.0.0.yaml
+
+changes:
+  - type: "feature"
+    description: "初始版本，基于云端fusion_detection_v1.0模型"
+  - type: "feature"
+    description: "支持5类目标检测：车辆、卡车、行人、骑行者、交通标志"
+  - type: "feature"
+    description: "包含2D/3D边界框、速度估计和目标跟踪"
+
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 100%
+  format_compliance: 100%
+  
+performance:
+  model_accuracy: "82.5%"
+  inference_time: "45ms"
+  throughput: "22 FPS"
+  false_positive_rate: "8.2%"
+  
+model_benchmark:
+  car_detection: "89.2%"
+  pedestrian_detection: "85.1%" 
+  cyclist_detection: "78.3%"
+  tracking_accuracy: "76.8%"
+  
+lifecycle:
+  status: stable
+  next_version: "1.2.0"
+  support_until: "2025-01-15" 

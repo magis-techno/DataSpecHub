@@ -1,0 +1,148 @@
+meta:
+  channel: utils_slam
+  version: 1.1.0
+  category: localization_pose
+  description: "SLAM工具数据v1.1.0，改进坐标系转换精度和速度计算"
+  
+schema:
+  data_format:
+    type: json
+    encoding: [json]
+    structure: "包含位姿、速度和坐标转换的JSON对象"
+    
+  slam_data:
+    ego_pose:
+      type: object
+      properties:
+        enu_pose:
+          type: array
+          shape: [2]
+          description: "ENU坐标系位姿，包含四元数和位置"
+          items:
+            - type: array
+              shape: [4]
+              description: "四元数 [x, y, z, w]"
+              example: [0.019504972122432327, 0.0020080662351163446, 0.01308441098676762, -0.9997221223528208]
+            - type: array
+              shape: [3]
+              description: "位置坐标 [x, y, z]"
+              example: [785920.9275085331, 3353830.356015686, 0.0]
+        odom_pose:
+          type: array
+          shape: [2]
+          description: "里程计坐标系位姿，包含四元数和位置"
+          items:
+            - type: array
+              shape: [4]
+              description: "四元数 [x, y, z, w]"
+              example: [0.9997581591034741, -0.012867138188287558, 0.001849538545362969, 0.017738073966618025]
+            - type: array
+              shape: [3]
+              description: "位置坐标 [x, y, z]"
+              example: [-2214.2400351168194, -2818.6324917416505, 13.376262471376906]
+              
+    ego_vel:
+      type: object
+      properties:
+        enu_vel:
+          type: float
+          unit: "m/s"
+          description: "ENU坐标系下的速度，v1.1.0改进计算精度"
+          example: 6.9110296296404226
+        odom_vel:
+          type: float
+          unit: "m/s"
+          description: "里程计坐标系下的速度"
+          example: 6.919523688832059
+        chassis_vel:
+          type: float
+          unit: "m/s"
+          description: "底盘坐标系下的速度"
+          example: 6.937499523162842
+          
+    odom2ego:
+      type: object
+      properties:
+        SrcYawInTar:
+          type: float
+          unit: "radians"
+          description: "源坐标系在目标坐标系中的偏航角"
+          example: -0.03542768805441564
+        CosSrcYawInTar:
+          type: float
+          description: "偏航角余弦值，v1.1.0改进精度"
+          example: 0.9993725050955188
+        SinSrcYawInTar:
+          type: float
+          description: "偏航角正弦值"
+          example: -0.03542027751313326
+        SrcXInTar:
+          type: float
+          unit: "meters"
+          description: "源坐标系在目标坐标系中的X偏移"
+          example: 2312.6873558425073
+        SrcYInTar:
+          type: float
+          unit: "meters"
+          description: "源坐标系在目标坐标系中的Y偏移"
+          example: 2738.43481769095
+          
+    enu2ego:
+      type: object
+      properties:
+        SrcYawInTar:
+          type: float
+          unit: "radians"
+          description: "ENU坐标系在自车坐标系中的偏航角"
+          example: 3.102635846312695
+        CosSrcYawInTar:
+          type: float
+          description: "偏航角余弦值"
+          example: -0.9992412795455919
+        SinSrcYawInTar:
+          type: float
+          description: "偏航角正弦值"
+          example: 0.0389469543364852
+        SrcXInTar:
+          type: float
+          unit: "meters"
+          description: "ENU坐标系在自车坐标系中的X偏移"
+          example: 915946.1109533455
+        SrcYInTar:
+          type: float
+          unit: "meters"
+          description: "ENU坐标系在自车坐标系中的Y偏移"
+          example: 3320676.509848199
+
+  metadata:
+    timestamp:
+      type: int64
+      unit: nanoseconds
+      description: "位姿数据时间戳"
+    frame_id:
+      type: string
+      description: "帧标识符"
+    coordinate_systems:
+      type: array
+      items: ["ego_vehicle", "odometry", "enu"]
+      description: "涉及的坐标系"
+    quality_info:
+      type: object
+      properties:
+        transformation_accuracy:
+          type: float
+          description: "v1.1.0新增坐标转换精度指标"
+        velocity_stability:
+          type: float
+          description: "速度计算稳定性"
+
+validation:
+  file_extensions: [".json"]
+  max_file_size: "2MB"
+  required_fields: ["ego_pose", "ego_vel", "odom2ego", "enu2ego"]
+  
+lifecycle:
+  status: stable
+  created_at: "2024-02-01"
+  updated_at: "2024-08-01"
+  maintainer: "localization-team@company.com" 

@@ -1,0 +1,45 @@
+meta:
+  consumer: foundational_model
+  owner: "foundation-model-team@company.com"
+  description: "智能驾驶大模型微调阶段的专用数据配置"
+  team: "智能驾驶大模型团队"
+  version: "1.0.2-finetuning"
+  parent_version: "1.0.0"
+  branch_type: "finetuning"
+  created_at: "2025-04-20"
+  expires_at: "2025-07-20"
+  stage: "finetuning"
+
+# 微调阶段的数据需求 - 更高质量，更精确
+requirements:
+  - channel: image_original
+    version: "1.2.0"  # 使用最新版本获得最高质量
+    required: true
+    on_missing: "fail"  # 任务失败中断，微调需要高质量数据
+    
+  - channel: object_array_fusion_infer
+    version: ">=1.2.0"
+    required: true
+    on_missing: "fail"  # 任务失败中断
+    
+  - channel: occupancy
+    version: "1.0.0"
+    required: true  # 微调阶段需要完整数据
+    on_missing: "substitute"  # 使用替代数据源
+    substitute_with:
+      channel: occupancy
+      version: ">=1.0.0"
+    
+  - channel: utils_slam
+    version: ">=1.0.0"
+    required: true
+    on_missing: "substitute"  # 使用替代数据源
+    substitute_with:
+      channel: utils_slam
+      version: ">=1.0.0"
+
+# 需求变更历史
+change_history:
+  - date: "2025-04-20"
+    version: "1.0.2-finetuning"
+    changes: "基于v1.0.0创建微调专用配置，提升数据质量要求和精确度" 

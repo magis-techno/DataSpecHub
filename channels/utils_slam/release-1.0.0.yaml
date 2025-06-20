@@ -1,0 +1,44 @@
+meta:
+  channel: utils_slam
+  version: 1.0.0
+  release_date: "2024-02-01"
+  release_type: major
+  
+spec_ref: ./spec-1.0.0.yaml
+
+changes:
+  - type: "feature"
+    description: "初始版本，提供SLAM位姿和地图数据"
+  - type: "feature"
+    description: "包含位置、方向、协方差和地标信息"
+
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 90%
+  format_compliance: 100%
+  
+performance:
+  processing_time: "25ms"
+  accuracy: "±0.5m"  # 位置精度
+  
+known_issues:
+  - issue: "enu_pose字段命名不准确"
+    description: "实际使用UTM坐标系但命名为ENU"
+    severity: "medium"
+  - issue: "缺失UTM zone_id字段"
+    description: "无法确定UTM投影区域，影响全局坐标转换"
+    severity: "high"
+  - issue: "缺少数据质量指标"
+    description: "无法评估SLAM数据可靠性"
+    severity: "medium"
+  
+lifecycle:
+  status: deprecated
+  next_version: "1.1.0"
+  support_until: "2024-08-01"
+  deprecation_notice: "建议升级至v1.1.0修复坐标系和字段缺失问题" 

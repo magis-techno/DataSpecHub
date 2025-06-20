@@ -1,0 +1,70 @@
+meta:
+  channel: object_array_fusion_infer
+  version: 1.2.0
+  release_date: "2024-07-01"
+  release_type: minor
+  
+spec_ref: ./spec-1.2.0.yaml
+
+changes:
+  - type: "improvement"
+    description: "升级至云端动目标预测网络v2.0.1，整体精度提升10%"
+  - type: "feature"
+    description: "新增动态轨迹预测功能，支持未来3秒轨迹预测"
+  - type: "feature"
+    description: "新增运动状态分类：静止、移动、转弯、加速、减速"
+  - type: "feature"
+    description: "新增风险等级评估：低、中、高、严重"
+  - type: "feature"
+    description: "扩展目标类别，新增摩托车和公交车检测"
+  - type: "feature"
+    description: "新增模型性能监控指标"
+  - type: "improvement"
+    description: "引入多头注意力机制和时序建模"
+
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+  migration_notes: "新增字段为可选，原有数据格式保持兼容"
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 100%
+  format_compliance: 100%
+  
+performance:
+  model_accuracy: "90.8%"  # 从82.5%提升至90.8%
+  inference_time: "38ms"   # 优化后减少
+  throughput: "26 FPS"     # 提升吞吐量
+  false_positive_rate: "4.1%"  # 显著降低
+
+model_benchmark:
+  car_detection: "95.1%"        # +5.9%
+  pedestrian_detection: "92.3%" # +7.2%
+  cyclist_detection: "86.7%"    # +8.4%
+  motorcycle_detection: "84.2%" # 新增
+  bus_detection: "93.5%"        # 新增  
+  tracking_accuracy: "89.2%"    # +12.4%
+  trajectory_prediction: "78.6%" # 新增能力
+
+prediction_metrics:
+  1s_prediction_accuracy: "94.2%"
+  2s_prediction_accuracy: "87.5%"
+  3s_prediction_accuracy: "79.1%"
+  risk_assessment_precision: "85.3%"
+
+ai_model_upgrade:
+  previous_model: "fusion_detection_v1.0"
+  current_model: "fusion_detection_v2.0.1"
+  improvement_areas:
+    - "动态目标预测网络架构优化"
+    - "多帧时序信息融合"
+    - "注意力机制引入"
+    - "风险评估模块集成"
+  
+lifecycle:
+  status: stable
+  prev_version: "1.0.0"
+  next_version: "1.3.0"
+  support_until: "2025-07-01" 

@@ -1,0 +1,39 @@
+meta:
+  consumer: foundational_model
+  owner: "foundation-model-team@company.com"
+  description: "智能驾驶大模型的数据通道版本需求"
+  team: "智能驾驶大模型团队"
+  version: "1.0.0"
+  created_at: "2025-04-10"
+  updated_at: "2025-04-10"
+
+# 大模型训练和推理的数据需求
+requirements:
+  - channel: image_original
+    version: ">=1.0.0"
+    required: true
+    on_missing: "fail"  # 任务失败中断
+    
+  - channel: object_array_fusion_infer
+    version: ">=1.0.0"
+    required: true
+    on_missing: "substitute"  # 使用替代数据源
+    substitute_with:
+      channel: object_array_fusion_infer
+      version: ">=1.0.0"
+    
+  - channel: occupancy
+    version: "1.0.0"
+    required: false
+    on_missing: "ignore"  # 忽略缺失继续处理
+    
+  - channel: utils_slam
+    version: ">=1.0.0"
+    required: false
+    on_missing: "ignore"  # 忽略缺失继续处理
+
+# 需求变更历史
+change_history:
+  - date: "2025-04-10"
+    version: "1.0.0"
+    changes: "初始版本：支持多模态大模型训练的基础数据需求" 

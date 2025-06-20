@@ -1,0 +1,95 @@
+meta:
+  channel: occupancy
+  version: 1.0.0
+  category: perception_output
+  description: "单帧场景占据栅格数据，包含静态场景和动态目标占据信息"
+  
+schema:
+  data_format:
+    type: occupancy_grid
+    encoding: [zst]
+    file_types:
+      occupancy:
+        description: "单帧场景占据，其中动目标使用3D box生成占据"
+      occupancy_with_dyn_obj_mesh:
+        description: "单帧场景占据，其中动目标使用mesh生成占据"
+    
+    compression:
+      algorithm: "zstd"
+      format: "ZST"
+      
+    data_structure:
+      shape: [704, 448, 24, 7]  # (height, width, depth, channels)
+      channels:
+        min_z:
+          index: 0
+          type: float32
+          description: "体素最小Z坐标"
+        max_z:
+          index: 1
+          type: float32
+          description: "体素最大Z坐标"
+        num_points:
+          index: 2
+          type: float32
+          description: "体素内点数量"
+        is_occupancy:
+          index: 3
+          type: float32
+          description: "占据状态标识"
+        vx:
+          index: 4
+          type: float32
+          description: "X方向速度"
+        vy:
+          index: 5
+          type: float32
+          description: "Y方向速度"
+        probability:
+          index: 6
+          type: float32
+          description: "占据概率，计算公式：(81 + vy*2) / 255"
+          
+    coordinate_system:
+      origin: "ego_vehicle"
+      axes: "RDF"  # Right-Down-Forward
+      flip: "[::-1, ::-1]"  # 数据读取后需要翻转
+      
+  parsing_info:
+    decompression:
+      library: "zstd"
+      method: "ZstdDecompressor().decompress()"
+    reshape:
+      target_shape: [704, 448, 24, 7]
+      data_type: "numpy.float32"
+    
+  timestamp:
+    type: int64
+    unit: nanoseconds
+    description: "占据数据的时间戳"
+      
+  metadata:
+    static_velocity_threshold:
+      type: float
+      value: 0.1
+      description: "静态速度阈值，低于此值视为静态"
+    center_pixel_ratio:
+      type: array
+      shape: [2]
+      description: "中心像素比例 [x_ratio, y_ratio]"
+    god_data_shape:
+      type: array
+      shape: [3]
+      value: [704, 448, 24]
+      description: "数据体积维度"
+
+validation:
+  file_extensions: [".zst"]
+  max_file_size: "100MB"
+  required_shape: [704, 448, 24, 7]
+  
+lifecycle:
+  status: stable
+  created_at: "2024-12-19"
+  updated_at: "2024-12-19"
+  maintainer: "perception-team@company.com" 

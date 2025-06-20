@@ -3,15 +3,7 @@ categories:
   sensor_raw:
     desc: 基础传感器原始数据
     channels:
-    - img_cam1
-    - fisheye_original_cam9
-    - image_raw
-      - image_original
-    - lidar
-      - radar
-      - radar_new_version
-    - uss
-    - dtof_lidar
+    - image_original
     
   # 2. 深度信息
   depth_data:
@@ -32,102 +24,22 @@ categories:
   perception_output:
     desc: 目标检测、分割、占据栅格等感知结果
     channels:
-      - object_array_fusion
       - object_array_fusion_infer
-      - object_array_fusion_pv
       - occupancy
-      - occupancy_with_dyn_obj_mesh
-      - drivable_space_infer
-      - pvseg_cam_1
-      - pvseg_cam_2
-      - pvseg_cam_3
-      - pvseg_cam_4
-      - pvseg_cam_5
-      - pvseg_cam_6
-      - pvseg_cam_7
-      - pvseg_cam_8
-      - curb
-      - gt_valid
   
   # 4. 定位与位姿
   localization_pose:
     desc: 自车位姿、SLAM、标定信息
     channels:
-      - utils
-      - utils_slam
-      - ego_pose
-      - calib
-      - lidar_calib
-      - sample_token
+      - utils_slam 
   
-  # 5. 地图与导航
-  map_navigation:
-    desc: 地图信息、导航数据、规划结果
-    channels:
-      - rc_map
-      - cognition_rctree
-      - pnc_sd_navi_info
-      - planning_pkl
-      - planning_pkl_fem
-  
-  # 6. 红绿灯相关
-  traffic_light:
-    desc: 红绿灯检测、状态、道路绑定
-    channels:
-      - traffic_light_road_topo
-      - traffic_light_matched_raw
-  
-  # 7. 控制与行为
-  control_behavior:
-    desc: 行为决策、控制信号
-    channels:
-      - is_stop_15kph
-      - is_stop_scene
-  
-  # 8. 时间戳与辅助信息
-  metadata:
-    desc: 时间戳、训练标志、辅助信息
-    channels:
-      - timestamp
-      - is_training
-      - is_evaluation
-      - is_train_det
-      - is_train_drivable
-      - is_train_god
-      - history_tokens
-      - duplicate
-      - frame_gt_info
-      - trainval_info
-  
-  # 9. 融合结果
-  fusion_results:
-    desc: 多传感器融合后的结果
-    channels:
-      - object_array_fusion_infer_cloud
-      - object_array_fusion_infer_pseudo
-      - object_array_fusion_multi_infer
-      - object_array_fusion_infer_full
-  
-  # 10. 其他
-  others:
-    desc: 其他特殊用途数据
-    channels:
-      - bev
-      - cognition
-      - lidar_name
-      - rc_exist
-      - lidar_cover_region
 
-# 别名映射 - 处理不合理命名
 aliases:
   radar_new_version: radar.v2
   image_original: image_raw  # 合并重复的原始图像通道
   
 # 废弃通道 - 标记不合理或重复的通道
 deprecated:
-  - channel: fisheye_depth_speh_cam9
-    reason: "命名不规范，建议使用 fisheye_depth_cam9"
-    replacement: fisheye_depth_cam9
   - channel: dense_depth_original_z_half_cam9  
-    reason: "命名过长，建议简化"
-    replacement: dense_depth_half_cam9
+    reason: "冗余，可以用户自行根据高精度数据解析使用"
+    replacement: dense_depth_original_z_cam9

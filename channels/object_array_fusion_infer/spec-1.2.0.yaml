@@ -1,0 +1,109 @@
+meta:
+  channel: object_array_fusion_infer
+  version: 1.2.0
+  category: perception_output
+  description: "重建（god_trans）产生的融合目标检测推理结果v1.2.0，改进检测精度和速度估计"
+  
+schema:
+  data_format:
+    type: json
+    encoding: [json]
+    structure: "每帧一个JSON文件，文件内容为动目标信息列表"
+    
+  object_array:
+    type: array
+    description: "动目标信息列表"
+    items:
+      type: object
+      properties:
+        ins_token:
+          type: integer
+          description: "实例标识符"
+          example: 11
+        score:
+          type: float
+          range: [0.0, 1.0]
+          description: "检测置信度，v1.2.0提升精度"
+          example: 0.9022827744483948
+        name:
+          type: string
+          enum: ["CAR", "TRUCK", "PEDESTRIAN", "CYCLIST", "MOTORCYCLE", "BUS", "BICYCLE"]  # v1.2.0扩展类别
+          description: "目标类别名称"
+          example: "CAR"
+        center:
+          type: array
+          shape: [3]
+          unit: "meters"
+          description: "3D中心坐标 [x, y, z]"
+          example: [0.48999786376947235, -5.48055648803703, 0.8923950195312503]
+        size:
+          type: array
+          shape: [3]
+          unit: "meters"
+          description: "3D尺寸 [length, width, height]"
+          example: [4.535156726837158, 1.8743256330490112, 1.718438982963562]
+        yaw:
+          type: float
+          unit: "radians"
+          description: "偏航角"
+          example: 1.5513081000835978
+        absolute_velocity:
+          type: array
+          shape: [3]
+          unit: "m/s"
+          description: "绝对速度向量 [vx, vy, vz]，v1.2.0改进估计算法"
+          example: [0.00044664524558169795, -0.0006388022285131005, 0.0]
+        relative_velocity:
+          type: array
+          shape: [3]
+          unit: "m/s"
+          description: "相对速度向量 [vx, vy, vz]"
+          example: [0, 0, 0]
+        movement:
+          type: float
+          unit: "m/s"
+          description: "运动幅度"
+          example: 4.008866199001204e-06
+        source:
+          type: string
+          description: "数据源标识"
+          enum: ["master_bev", "lidar", "camera", "radar", "fusion"]  # v1.2.0新增fusion源
+          example: "master_bev"
+        label_source:
+          type: string
+          description: "标签来源"
+          enum: ["PSEUDO_LABELLING", "MANUAL", "AUTO", "ENHANCED_AUTO"]  # v1.2.0新增增强自动标注
+          example: "PSEUDO_LABELLING"
+        speed_source:
+          type: string
+          description: "速度信息来源"
+          enum: ["meta_bev", "tracking", "sensor", "kalman_filter"]  # v1.2.0新增卡尔曼滤波
+          example: "meta_bev"
+
+  metadata:
+    timestamp:
+      type: int64
+      unit: nanoseconds
+      description: "数据时间戳"
+    frame_id:
+      type: string
+      description: "帧标识符"
+    source_info:
+      type: string
+      value: "god_trans重建结果v1.2.0"
+      description: "数据生成来源，v1.2.0版本"
+    model_version:
+      type: string
+      value: "1.2.0"
+      description: "模型版本标识"
+
+validation:
+  file_extensions: [".json"]
+  max_file_size: "5MB"
+  required_fields: ["ins_token", "score", "name", "center", "size", "yaw"]
+  
+lifecycle:
+  status: stable
+  created_at: "2024-01-15"
+  updated_at: "2024-07-01"
+  maintainer: "perception-team@company.com" 
