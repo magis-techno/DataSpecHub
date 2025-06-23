@@ -29,9 +29,11 @@ schema:
       type: string
       description: "相机位置标识"
 
-# 存储映射信息 - 实际数据路径映射
-storage_mapping:
-  description: "从camera_encoded_0.bag话题提取的图像数据"
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "bev_lite"
+  module_version: "v1.0.0"
+  description: "原始图像数据由bev_lite模块处理生成"
   source_topic: "camera_encoded_0.bag"
   # 注：实际数据中没有配套的元数据文件
   # 以下信息需要从其他来源获取：

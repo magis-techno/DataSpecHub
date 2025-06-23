@@ -1,4 +1,4 @@
-# Bundle类型使用需求分析
+# Bundle使用场景分析 - 版本清单模式
 
 ## 使用需求映射
 
@@ -6,18 +6,18 @@
 
 ```
 业务需求层次     →    Bundle类型     →    特征
-生产部署         →    Release       →    长期稳定
-定期协作         →    Weekly        →    固定节拍  
-临时验证         →    Snapshots     →    快速灵活
+生产部署         →    Release       →    经过验证的版本清单
+定期协作         →    Weekly        →    固定节拍的版本快照  
+临时验证         →    Snapshots     →    快速灵活的实验清单
 ```
 
 ## 1. Release Bundle - 正式发布版本
 
 ### 使用场景
-- **生产环境部署** - 严格质量控制的生产数据版本
-- **客户交付** - 向外部客户交付的数据包
+- **生产环境部署** - 经过严格质量验证的版本清单
+- **客户交付** - 向外部客户交付的数据版本组合
 - **里程碑发布** - 重大功能更新的正式版本
-- **长期支持** - 需要维护和支持的稳定版本
+- **长期支持** - 需要维护和支持的稳定版本清单
 
 ### 目标用户
 - 生产运维团队
@@ -38,32 +38,35 @@ lifecycle:
 
 ### 实际需求示例
 
-**场景1：自动驾驶系统v2.0发布**
+**场景1：红绿灯检测系统v1.1.0发布**
 ```bash
-# 使用需求：新算法正式上线，需要严格验证的数据版本
+# 使用需求：红绿灯检测新算法正式上线
 python scripts/bundle_generator.py \
-  --consumer consumers/autonomous_driving/v2.0.0.yaml \
+  --consumer consumers/pv_trafficlight/latest.yaml \
   --type release
 
-# 生成：bundles/release/autonomous_driving-v2.0.0.yaml
-# 特点：经过完整QA流程，支持1年，有回滚计划
+# 生成：bundles/release/pv_trafficlight-v1.1.0-release.yaml
+# 特点：
+# - Consumer版本 v1.1.0 体现在文件名中
+# - 版本清单: image_original ["1.2.0"], occupancy ["1.0.0"]
+# - 经过完整QA流程，支持1年，有回滚计划
 ```
 
 **场景2：客户交付数据包**
 ```bash
 # 使用需求：向车厂客户交付训练数据包
 python scripts/bundle_generator.py \
-  --consumer consumers/customer_delivery/oem_a.yaml \
+  --consumer consumers/customer_delivery/oem_a-v2.0.0.yaml \
   --type release
 
-# 生成：bundles/release/oem_a-v1.3.0.yaml  
-# 特点：数据完整性验证，法律合规检查，长期维护
+# 生成：bundles/release/oem_a-v2.0.0-release.yaml  
+# 特点：包含明确的版本清单，法律合规检查，长期维护
 ```
 
 ## 2. Weekly Bundle - 固定周期版本
 
 ### 使用场景
-- **团队协作同步** - 保证团队使用相同的数据版本
+- **团队协作同步** - 保证团队使用相同的版本清单
 - **定期训练任务** - 每周定期的模型训练
 - **集成测试环境** - 持续集成的标准数据环境
 - **进度同步节点** - 项目进度的数据版本里程碑
@@ -89,24 +92,29 @@ lifecycle:
 
 **场景1：端到端团队周例会**
 ```bash
-# 使用需求：每周一团队例会前，生成统一的数据版本
+# 使用需求：每周一团队例会前，生成统一的版本清单
 # 自动任务：每周一上午10:00自动执行
 python scripts/bundle_generator.py \
   --consumer consumers/end_to_end/latest.yaml \
   --type weekly
 
-# 生成：bundles/weekly/end_to_end-2025.25.yaml
-# 团队收到通知：📅 Weekly Bundle 2025.25 已生成，请更新本地环境
+# 生成：bundles/weekly/end_to_end-v1.2.0-2025.25.yaml
+# 版本清单内容：
+#   image_original: ["1.2.0"]
+#   object_array_fusion_infer: ["1.2.0", "1.1.0", "1.0.0"]
+#   occupancy: ["1.0.0"] 
+#   utils_slam: ["1.1.0", "1.0.0"]
+# 团队收到通知：📅 Weekly Bundle 2025.25 已生成，包含4个channel的版本清单
 ```
 
 **场景2：模型训练Pipeline**
 ```bash
-# 使用需求：每周定期训练模型，使用固定的数据版本基线
+# 使用需求：每周定期训练模型，使用固定的版本清单基线
 # CI/CD Pipeline中使用
-dataspec load --bundle bundles/weekly/perception_training-2025.25.yaml
+dataspec load --bundle bundles/weekly/end_to_end-v1.2.0-2025.25.yaml
 python train_model.py --config weekly_training.yaml
 
-# 结果：每周训练结果可对比，数据版本一致性保证
+# 结果：每周训练结果可对比，版本清单一致性保证
 ```
 
 **场景3：多团队协作**
@@ -114,15 +122,15 @@ python train_model.py --config weekly_training.yaml
 # 团队协作场景
 teams:
   perception_team:
-    usage: "使用weekly bundle进行算法开发"
-    sync_schedule: "每周一检查新版本"
+    usage: "使用weekly bundle的版本清单进行算法开发"
+    sync_schedule: "每周一检查新版本清单"
     
   training_team:
-    usage: "基于weekly bundle进行模型训练"
+    usage: "基于weekly bundle版本清单进行模型训练"
     dependency: "perception_team的算法更新"
     
   testing_team:
-    usage: "使用weekly bundle进行回归测试"
+    usage: "使用weekly bundle版本清单进行回归测试"
     trigger: "新weekly bundle生成后24小时内"
 ```
 
@@ -155,22 +163,26 @@ lifecycle:
 
 **场景1：算法研究员的新想法验证**
 ```bash
-# 使用需求：想测试新的融合算法，需要特定的数据组合
+# 使用需求：测试新的多模态融合算法，需要特定的数据组合
 python scripts/bundle_generator.py \
-  --consumer consumers/experiments/radar_fusion_test.yaml \
+  --consumer consumers/experiments/multimodal_fusion_test.yaml \
   --type snapshot
 
-# 生成：bundles/snapshots/radar_fusion_test-20250620-143500.yaml
-# 特点：7天后自动清理，用途明确标记
+# 生成：bundles/snapshots/multimodal_fusion_test-v1.0.0-20250620-143500.yaml
+# 版本清单特点：
+#   - 支持多版本并行: image_original ["1.2.0", "1.1.0", "1.0.0"]
+#   - 实验用途标记: experiment_role字段
+#   - 7天后自动清理
 ```
 
 **场景2：紧急Bug调试**
 ```bash
 # 使用需求：生产环境出现问题，需要复现特定版本组合
 # 临时创建consumer配置
-cat > consumers/debug/emergency_debug.yaml << EOF
+cat > consumers/debug/emergency_debug-v1.0.0.yaml << EOF
 meta:
   consumer: emergency_debug
+  version: "v1.0.0"
   purpose: "复现生产环境Issue #1234"
 requirements:
   - channel: image_original
@@ -180,84 +192,66 @@ requirements:
 EOF
 
 python scripts/bundle_generator.py \
-  --consumer consumers/debug/emergency_debug.yaml \
+  --consumer consumers/debug/emergency_debug-v1.0.0.yaml \
   --type snapshot
 
-# 生成：bundles/snapshots/emergency_debug-20250620-153000.yaml
+# 生成：bundles/snapshots/emergency_debug-v1.0.0-20250620-153000.yaml
 # 用于：本地复现问题，找到根因后清理
 ```
 
-**场景3：业务团队临时数据需求**
+**场景3：基础模型实验**
 ```bash
-# 使用需求：市场团队需要特定场景的数据进行分析
+# 使用需求：智能驾驶大模型团队需要多模态训练数据验证
 python scripts/bundle_generator.py \
-  --consumer consumers/business/market_analysis_temp.yaml \
+  --consumer consumers/foundational_model/latest.yaml \
   --type snapshot
 
+# 生成：bundles/snapshots/foundational_model-v1.0.0-20250620-143500.yaml
 # 特点：
-# - 无需走正式流程
-# - 2周后自动过期
-# - 数据使用有审计记录
+# - 支持多版本对比实验
+# - 明确的experiment_role标记
+# - 自动过期机制
 ```
 
-## 使用决策树
+## 新的Bundle优势
 
-```
-数据需求分析
-├── 用途期限？
-│   ├── 长期使用(>3个月) → Release Bundle
-│   ├── 定期使用(周期性) → Weekly Bundle  
-│   └── 短期使用(<1个月) → Snapshots Bundle
-│
-├── 质量要求？
-│   ├── 生产级别 → Release Bundle
-│   ├── 开发级别 → Weekly Bundle
-│   └── 实验级别 → Snapshots Bundle
-│
-└── 审批流程？
-    ├── 需要正式审批 → Release Bundle
-    ├── 团队内协调 → Weekly Bundle
-    └── 个人/小组使用 → Snapshots Bundle
-```
+### 1. **版本清单明确**
+- 提供明确的可用版本列表：`["1.2.0", "1.1.0", "1.0.0"]`
+- 推荐版本指导：`recommended_version: "1.2.0"`
+- 适应数据生产的渐进性和异步性
 
-## 管理策略
+### 2. **Consumer版本可见**
+- 文件名体现Consumer版本：`end_to_end-v1.2.0-2025.25.yaml`
+- 直接的版本对应关系
+- 易于浏览和管理
 
-### 自动化管理
-```bash
-# Weekly Bundle - 自动生成
-# crontab: 0 10 * * 1  # 每周一10:00
-/scripts/auto_weekly_bundle.sh
-
-# Snapshots - 自动清理  
-# crontab: 0 2 * * *   # 每天凌晨2:00
-/scripts/cleanup_expired_snapshots.sh
-
-# Release - 手动管理，严格控制
-# 需要通过正式的发布流程
-```
-
-### 监控告警
+### 3. **灵活的数据获取**
 ```yaml
-monitoring:
-  weekly_bundle:
-    alert_if: "生成失败或延迟超过30分钟"
-    notification: "team-channel"
-    
-  snapshots:
-    alert_if: "数量超过50个"
-    action: "提醒清理旧快照"
-    
-  release:
-    alert_if: "质量检查失败"  
-    action: "阻止发布，通知相关人员"
+# Bundle提供版本清单
+channels:
+  - channel: object_array_fusion_infer
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    recommended_version: "1.2.0"
+
+# 数据获取系统根据实际情况选择：
+# - 优先使用 1.2.0 (如果数据可用)
+# - 必要时降级到 1.1.0 或 1.0.0
+# - 支持多版本混合使用
 ```
 
-## 总结
+### 4. **完整的追溯性**
+```yaml
+# 每个Bundle都记录转换历史
+conversion_source:
+  consumer_config: "consumers/end_to_end/latest.yaml"
+  consumer_version: "v1.2.0"
+  conversion_time: "2025-06-20T14:30:00Z"
+  
+channels:
+  - channel: object_array_fusion_infer
+    source_constraint: ">=1.2.0"           # 原始约束
+    available_versions: ["1.2.0", "1.1.0"] # 解析结果
 
-三种Bundle类型形成了完整的数据版本管理体系：
+```
 
-- **Release**: 生产环境的稳定基石
-- **Weekly**: 团队协作的同步节拍  
-- **Snapshots**: 敏捷开发的灵活工具
-
-通过这种分层设计，既保证了生产环境的稳定性，又满足了开发过程中的灵活性需求。 
+这样的Bundle设计更贴近数据生产的现实情况，提供了**版本清单**而非**固定版本**，既保持了可追溯性，又提供了灵活性。 

@@ -136,6 +136,12 @@ schema:
           type: float
           description: "速度计算稳定性"
 
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "bev_lite"
+  module_version: "v1.0.0"
+  description: "SLAM工具数据由bev_lite模块处理生成"
+
 validation:
   file_extensions: [".json"]
   max_file_size: "2MB"

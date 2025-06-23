@@ -1,177 +1,175 @@
-# Bundle类型对比表
+# Bundle对比表格 - 新版本清单模式
 
-## 核心特征对比
+## 命名规范对比
 
-| 维度 | Release Bundle | Weekly Bundle | Snapshots Bundle |
-|------|----------------|---------------|------------------|
-| **主要用途** | 生产部署、客户交付 | 团队协作、定期训练 | 快速验证、临时试验 |
-| **版本格式** | v1.2.0 (语义化) | 2025.25 (年.周) | 20250620-143500 (时间戳) |
-| **生命周期** | 6-12个月 | 4周 | 7-30天 |
-| **质量要求** | 生产级 | 开发级 | 实验级 |
-| **审批流程** | 严格审批 | 团队协调 | 无需审批 |
-| **自动化** | 手动发布 | 自动生成 | 即时创建 |
-| **向后兼容** | 必须保证 | 尽量保证 | 无需保证 |
+| 旧命名格式 | 新命名格式 | 改进点 |
+|-----------|-----------|--------|
+| `end_to_end-2025.25.yaml` | `end_to_end-v1.2.0-2025.25.yaml` | Consumer版本直接可见 |
+| `pv_trafficlight-v1.1.0.yaml` | `pv_trafficlight-v1.1.0-release.yaml` | Bundle类型明确标识 |
+| `foundational_model-20250620-143500.yaml` | `foundational_model-v1.0.0-20250620-143500.yaml` | Consumer版本可追溯 |
 
-## 使用频率和用户群体
+## Bundle内容对比
 
-| Bundle类型 | 创建频率 | 主要用户 | 使用场景数量 |
-|------------|----------|----------|-------------|
-| **Release** | 每月1-2次 | 运维、产品、客户 | 少而精 (5-10个/年) |
-| **Weekly** | 每周1次 | 开发、测试、训练 | 定期稳定 (52个/年) |
-| **Snapshots** | 随时创建 | 研究、调试、分析 | 大量临时 (200+个/年) |
+### 旧设计 vs 新设计
 
-## 技术实现差异
+| 方面 | 旧设计（固定版本） | 新设计（版本清单） |
+|------|------------------|------------------|
+| **核心思路** | 硬约束精确版本 | 提供版本选择清单 |
+| **版本字段** | `version: "1.2.0"` | `available_versions: ["1.2.0", "1.1.0", "1.0.0"]` |
+| **推荐机制** | 无 | `recommended_version: "1.2.0"` |
+| **灵活性** | 低 - 固定版本 | 高 - 多版本可选 |
+| **数据覆盖** | 可能缺失数据 | 最大化数据覆盖 |
 
-### Release Bundle
+### 具体示例对比
+
+#### **Weekly Bundle**
+
+**旧设计：**
 ```yaml
-特征:
-  stability_check: "全面回归测试"
-  quality_gates: ["代码审查", "性能测试", "安全扫描"]
-  documentation: "完整发布说明"
-  rollback_plan: "详细回滚方案"
-  support_team: "专门运维团队"
-
-示例配置:
-  meta:
-    bundle_type: release
-    version: "v1.2.0"
-    support_until: "2026-06-20"
-    quality_gate_passed: true
+# bundles/weekly/end_to_end-2025.25.yaml
+channels:
+  - channel: object_array_fusion_infer
+    version: "1.2.0"                    # 固定版本
+    source_constraint: ">=1.2.0"
 ```
 
-### Weekly Bundle  
+**新设计：**
 ```yaml
-特征:
-  auto_generation: "每周一10:00"
-  team_notification: "自动通知相关团队"
-  regression_test: "基础兼容性测试"
-  retention_policy: "保留最近4个版本"
-  collaboration_tool: "团队协作基准"
+# bundles/weekly/end_to_end-v1.2.0-2025.25.yaml
+channels:
+  - channel: object_array_fusion_infer
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]  # 版本清单
+    recommended_version: "1.2.0"                      # 推荐版本
+    source_constraint: ">=1.2.0"
 
-示例配置:
-  meta:
-    bundle_type: weekly
-    version: "2025.25"
-    auto_cleanup: "4周后"
-    team_sync: true
 ```
 
-### Snapshots Bundle
+## Bundle类型特征对比
+
+| Bundle类型 | 文件命名模式 | 版本策略 | 生命周期 | 主要用途 |
+|-----------|-------------|----------|----------|----------|
+| **Weekly** | `{consumer}-v{consumer_ver}-{year}.{week}.yaml` | 稳定的版本清单 | 4周保留 | 团队协作同步 |
+| **Release** | `{consumer}-v{consumer_ver}-release.yaml` | 经过验证的清单 | 长期支持 | 生产环境部署 |
+| **Snapshot** | `{consumer}-v{consumer_ver}-{timestamp}.yaml` | 实验性版本清单 | 7-30天 | 快速验证实验 |
+
+## 实际应用场景对比
+
+### 场景1：数据部分可用的情况
+
+**问题：** `object_array_fusion_infer` 数据集中，有些数据片段只有v1.1.0，有些有v1.2.0
+
+**旧设计的问题：**
 ```yaml
-特征:
-  instant_creation: "立即生成"
-  purpose_tracking: "明确使用目的"
-  auto_cleanup: "TTL自动清理"
-  minimal_validation: "基础格式检查"
-  audit_trail: "使用审计记录"
+# 固定版本 v1.2.0
+channels:
+  - channel: object_array_fusion_infer
+    version: "1.2.0"  # 部分数据缺失
+```
+- 结果：数据覆盖不完整，训练数据量减少
 
-示例配置:
-  meta:
-    bundle_type: snapshot
-    version: "20250620-143500"
-    ttl_hours: 168
-    purpose: "radar融合算法验证"
+**新设计的解决：**
+```yaml
+# 版本清单模式
+channels:
+  - channel: object_array_fusion_infer
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    recommended_version: "1.2.0"
+```
+- 结果：数据获取系统可以智能选择，最大化数据覆盖
+
+### 场景2：版本溯源
+
+**旧设计：**
+- 文件名：`end_to_end-2025.25.yaml`
+- 问题：看不出基于哪个Consumer版本生成
+
+**新设计：**
+- 文件名：`end_to_end-v1.2.0-2025.25.yaml`
+- 优势：直接知道Consumer版本，便于追溯
+
+### 场景3：实验对比
+
+**新设计的优势：**
+```yaml
+# Snapshot Bundle支持多版本实验
+channels:
+  - channel: image_original
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    recommended_version: "1.2.0"
+    experiment_role: "视觉模态主要输入"
+```
+- 支持A/B测试和版本对比实验
+- 单个Bundle支持多种数据版本组合
+
+## 文件组织结构
+
+### 新的Bundle目录结构
+
+```
+bundles/
+├── weekly/
+│   ├── end_to_end-v1.2.0-2025.25.yaml           # 端到端v1.2.0的周级快照
+│   ├── foundational_model-v1.0.0-2025.25.yaml   # 基础模型v1.0.0的周级快照
+│   └── ...
+├── release/
+│   ├── pv_trafficlight-v1.1.0-release.yaml      # 红绿灯v1.1.0正式发布
+│   └── ...
+└── snapshots/
+    ├── foundational_model-v1.0.0-20250620-143500.yaml  # 实验快照
+    └── ...
 ```
 
-## 决策流程图
+### 文件浏览体验
 
-```
-收到数据需求
-├── 是否用于生产？
-│   ├── 是 → 是否需要长期维护？
-│   │   ├── 是 → Release Bundle
-│   │   └── 否 → Weekly Bundle
-│   └── 否 → 是否团队共用？
-│       ├── 是 → Weekly Bundle
-│       └── 否 → Snapshots Bundle
-│
-├── 紧急程度如何？
-│   ├── 紧急 → Snapshots Bundle
-│   ├── 常规 → Weekly Bundle
-│   └── 计划 → Release Bundle
-│
-└── 质量要求如何？
-    ├── 严格 → Release Bundle
-    ├── 一般 → Weekly Bundle
-    └── 宽松 → Snapshots Bundle
-```
-
-## 实际工作流示例
-
-### 典型的一周工作流
-```
-周一:
-- 09:00 自动生成Weekly Bundle (2025.25)
-- 10:00 团队收到通知，开始使用新版本
-- 11:00 开发者创建Snapshots验证新想法
-
-周二-周四:
-- 研究员创建多个Snapshots进行实验
-- 开发团队基于Weekly Bundle进行开发
-- 测试团队使用Weekly Bundle进行回归测试
-
-周五:
-- 评估本周实验结果
-- 清理过期的Snapshots
-- 规划下周的工作内容
-
-月末:
-- 评估Monthly Release的准备情况
-- 将稳定的Weekly功能合并到Release分支
-```
-
-### 不同角色的使用模式
-
-**算法研究员**
+**旧设计：**
 ```bash
-# 90%使用Snapshots，10%使用Weekly
-python scripts/bundle_generator.py --consumer research/new_idea.yaml --type snapshot
-python scripts/bundle_generator.py --consumer research/baseline.yaml --type weekly
+ls bundles/weekly/
+end_to_end-2025.25.yaml        # 看不出Consumer版本
+pv_trafficlight-2025.25.yaml   # 版本信息不明确
 ```
 
-**模型训练工程师**  
+**新设计：**
 ```bash
-# 80%使用Weekly，20%使用Snapshots
-dataspec load --bundle bundles/weekly/training-2025.25.yaml  # 主要训练
-python scripts/bundle_generator.py --consumer debug/training_issue.yaml --type snapshot  # 调试
+ls bundles/weekly/
+end_to_end-v1.2.0-2025.25.yaml           # 一目了然的版本对应
+foundational_model-v1.0.0-2025.25.yaml   # Consumer版本清晰可见
 ```
 
-**生产运维工程师**
+## 迁移指南
+
+### 1. 文件重命名
 ```bash
-# 95%使用Release，5%使用Weekly
-dataspec load --bundle bundles/release/production-v2.1.0.yaml  # 生产部署
-dataspec load --bundle bundles/weekly/staging-2025.25.yaml    # 预发布验证
+# 旧文件重命名为新格式
+mv bundles/weekly/end_to_end-2025.25.yaml \
+   bundles/weekly/end_to_end-v1.2.0-2025.25.yaml
 ```
 
-## 存储和清理策略
-
-| Bundle类型 | 存储位置 | 保留策略 | 清理策略 |
-|------------|----------|----------|----------|
-| **Release** | `bundles/release/` | 永久保留 | 手动清理，需审批 |
-| **Weekly** | `bundles/weekly/` | 保留4个版本 | 自动清理旧版本 |
-| **Snapshots** | `bundles/snapshots/` | TTL过期 | 自动清理，无需审批 |
-
-## 监控指标
-
+### 2. 内容结构升级
 ```yaml
-metrics:
-  release_bundle:
-    success_rate: ">99%"
-    deployment_time: "<30min"
-    rollback_frequency: "<1%"
+# 从固定版本升级为版本清单
+channels:
+  - channel: object_array_fusion_infer
+    # 旧格式
+    version: "1.2.0"
     
-  weekly_bundle:
-    generation_punctuality: ">95%"
-    team_adoption_rate: ">90%"
-    version_skipping: "<10%"
-    
-  snapshots_bundle:
-    creation_latency: "<5min"
-    cleanup_efficiency: ">95%"
-    storage_utilization: "<80%"
+    # 新格式
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    recommended_version: "1.2.0"
+    source_constraint: ">=1.2.0"
+
 ```
 
-这样的分层设计确保了：
-- **Release**: 生产环境的稳定可靠
-- **Weekly**: 团队协作的规范有序  
-- **Snapshots**: 研发过程的敏捷灵活 
+### 3. 工具链适配
+- Bundle生成器自动使用新的命名规范
+- 数据获取系统支持版本清单解析
+- 验证工具兼容新的Bundle格式
+
+## 核心优势总结
+
+1. **更直观的命名** - Consumer版本直接体现在文件名中
+2. **更灵活的版本选择** - 提供版本清单而非固定版本
+3. **更好的数据覆盖** - 适应数据生产的渐进性
+4. **更强的可追溯性** - 完整的转换历史记录
+5. **更现实的设计** - 符合实际数据生产场景
+
+新的Bundle设计解决了固定版本带来的数据覆盖问题，同时保持了版本管理的严谨性和可追溯性。 

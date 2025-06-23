@@ -83,6 +83,12 @@ schema:
       value: [704, 448, 24]
       description: "数据体积维度"
 
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "god_trans"
+  module_version: "v1.4.0"
+  description: "场景占据栅格数据由god_trans模块生成"
+
 validation:
   file_extensions: [".zst"]
   max_file_size: "100MB"

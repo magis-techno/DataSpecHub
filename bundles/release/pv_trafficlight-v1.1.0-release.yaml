@@ -1,0 +1,55 @@
+# Release Bundle - 红绿灯检测生产版本
+# 正式发布的版本快照，经过完整质量验证
+
+meta:
+  bundle_name: pv_trafficlight
+  consumer_version: "v1.1.0"        # Consumer版本
+  bundle_version: "v1.1.0-release"  # Bundle版本（Consumer版本-类型）
+  bundle_type: release
+  created_at: "2025-06-15T09:00:00Z"
+  source_consumer: "consumers/pv_trafficlight/latest.yaml"
+  description: "红绿灯检测正式发布版本 - v1.1.0"
+
+# 来源追踪
+conversion_source:
+  consumer_config: "consumers/pv_trafficlight/latest.yaml"
+  consumer_version: "v1.1.0"
+  conversion_time: "2025-06-15T09:00:00Z"
+  converted_by: "release_manager"
+
+# 版本清单 - 经过生产验证的版本组合
+channels:
+  - channel: image_original
+    available_versions: ["1.2.0"]     # 生产验证的图像版本
+    recommended_version: "1.2.0"
+    source_constraint: "1.2.0"
+    quality_gate: "passed"            # 已通过质量门控
+    
+  - channel: occupancy
+    available_versions: ["1.0.0"]     # 辅助数据
+    recommended_version: "1.0.0"
+    source_constraint: "1.0.0"
+    quality_gate: "passed"
+
+# Release配置
+release_config:
+  support_until: "2026-06-15"         # 长期支持时间
+  quality_gate_passed: true           # 质量门控状态
+  production_ready: true              # 生产就绪
+  backward_compatibility: true        # 向后兼容
+  approval_required: true              # 需要正式审批
+  
+# 完整性验证
+integrity:
+  constraint_hash: "pv-traffic-v1.1.0-release"  # 基于bundle版本
+  all_constraints_resolved: true
+  total_channels: 2
+  quality_score: 0.95                 # 质量评分
+  
+# 使用说明
+usage:
+  description: "红绿灯检测生产环境数据版本"
+  target_scenarios: ["production_deployment", "customer_delivery"]
+  data_loading: "使用recommended_version进行生产部署"
+  support_contact: "pv-traffic-team@company.com"
+  deployment_guide: "参考docs/deployment/pv_trafficlight_v1.1.0.md" 

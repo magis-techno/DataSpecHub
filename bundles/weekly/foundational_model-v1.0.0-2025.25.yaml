@@ -1,0 +1,53 @@
+# Bundle快照 - 基础模型周级版本
+# 智能驾驶大模型的定期数据版本快照
+
+meta:
+  bundle_name: foundational_model
+  consumer_version: "v1.0.0"        # Consumer版本
+  bundle_version: "v1.0.0-2025.25"  # Bundle版本（Consumer版本-年.周数）
+  bundle_type: weekly
+  created_at: "2025-06-20T10:00:00Z"
+  source_consumer: "consumers/foundational_model/latest.yaml"
+  description: "智能驾驶大模型数据快照 - 2025年第25周"
+
+# 来源追踪
+conversion_source:
+  consumer_config: "consumers/foundational_model/latest.yaml"
+  consumer_version: "v1.0.0"
+  conversion_time: "2025-06-20T10:00:00Z"
+  converted_by: "bundle_generator"
+
+# 版本清单 - 大模型训练数据组合
+channels:
+  - channel: image_original
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]  # 范围约束解析结果
+    recommended_version: "1.2.0"
+    source_constraint: ">=1.0.0"
+    
+  - channel: object_array_fusion_infer  
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    recommended_version: "1.2.0"
+    source_constraint: ">=1.0.0"
+    
+  - channel: occupancy
+    available_versions: ["1.0.0"]
+    recommended_version: "1.0.0"
+    source_constraint: "1.0.0"
+    
+  - channel: utils_slam
+    available_versions: ["1.1.0", "1.0.0"]
+    recommended_version: "1.1.0"
+    source_constraint: ">=1.0.0"
+
+# 完整性验证
+integrity:
+  constraint_hash: "foundational-v1.0.0-2025.25"  # 基于bundle版本
+  all_constraints_resolved: true
+  total_channels: 4
+  
+# 使用说明
+usage:
+  description: "智能驾驶大模型训练的多模态数据组合"
+  target_scenarios: ["multimodal_pretraining", "foundation_model_training"]
+  data_loading: "支持大规模并行数据加载，recommended_version优先"
+  training_notes: "建议使用所有available_versions进行数据增强" 

@@ -57,16 +57,40 @@ meta:
 schema:
   data_format:
     type: binary
-    encoding: protobuf
+    encoding: [protobuf]
+    compression:
+      bitrate: 4000000  # 4Mbps
+      quality: standard
+    average_file_size: "2.0MB"
     
-  # 详细的数据结构定义...
-  
+  timestamp:
+    type: int64
+    unit: nanoseconds
+    description: "数据采集时间戳"
+      
+  metadata:
+    data_source:
+      type: string
+      description: "数据来源话题"
+    sensor_position: 
+      type: string
+      description: "传感器位置标识"
+
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "processing_module"
+  module_version: "v1.0.0"
+  description: "传感器数据由指定处理模块生成"
+  source_topic: "sensor_data.bag"
+
 validation:
   file_extensions: [".pb"]
   max_file_size: "50MB"
   
 lifecycle:
   status: draft
+  created_at: "2024-01-01"
+  updated_at: "2024-01-01"
   maintainer: "sensor-team@company.com"
 EOF
 ```
@@ -78,32 +102,61 @@ meta:
   channel: new_sensor
   version: 1.0.0
   release_date: "2024-01-01"
+  release_type: major
   
 spec_ref: ./spec-1.0.0.yaml
 
-# 生产规格到发布规格的映射关系
-production_mapping:
-  production_runs:
-    - run_id: "prod-2024-001"
-      date: "2024-01-01"
-      data_path: "/data/prod-2024-001/new_sensor"
-      
 changes:
   - type: "feature"
     description: "初始版本发布"
     
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 100%
+  format_compliance: 100%
+  
+performance:
+  file_size_avg: "2.0MB"
+  processing_time: "120ms"
+  
 lifecycle:
   status: stable
+  next_version: "1.1.0"
+  support_until: "2025-06-01"
 EOF
 ```
 
-#### 步骤3：添加样本数据
+#### 步骤3：创建变更日志
+```bash
+cat > channels/new_sensor/CHANGELOG.md << EOF
+# new_sensor 通道变更日志
+
+## [1.0.0] - 2024-01-01
+
+### 新增
+- 初始版本发布
+- 支持protobuf格式的传感器数据
+- 标准时间戳和元数据字段
+- 语义化存储映射信息
+
+### 架构设计
+- 采用分离式设计：通道专注数据格式，索引系统管理关联关系
+- 传感器命名按位置而非具体硬件，提高通用性
+EOF
+```
+
+#### 步骤4：添加样本数据
 ```bash
 mkdir channels/new_sensor/samples
 # 添加示例数据文件到samples目录（用于格式验证，不涉及数据量要求）
 ```
 
-#### 步骤4：更新分类体系
+#### 步骤5：更新分类体系
 编辑 `taxonomy/channel_taxonomy.yaml`，将新通道添加到相应分类中。
 
 ### 2. 版本升级
@@ -123,6 +176,8 @@ meta:
   version: 1.1.0
   release_type: minor
   
+spec_ref: ./spec-1.1.0.yaml
+
 changes:
   - type: "feature"
     description: "新增字段X"
@@ -132,56 +187,135 @@ changes:
 compatibility:
   backward_compatible: true
   breaking_changes: []
+
+quality_metrics:
+  validation_passed: true
+  sample_coverage: 100%
+  format_compliance: 100%
+  
+performance:
+  file_size_avg: "1.8MB"
+  processing_time: "100ms"
+  
+lifecycle:
+  status: stable
+  next_version: "1.2.0"
+  support_until: "2025-12-01"
 EOF
 ```
+
+#### 更新变更日志
+在 `CHANGELOG.md` 中添加新版本的变更记录。
 
 ### 3. 配置消费者需求
 
 #### 创建消费者配置文件
 ```bash
-cat > consumers/my_application.yaml << EOF
+cat > consumers/my_application/v1.0.0.yaml << EOF
 meta:
   consumer: my_application
   owner: "app-team@company.com"
   description: "我的应用数据需求"
-  
-requirement_groups:
-  core_sensors:
-    requirements:
-      - channel: img_cam1
-        version: ">=1.0.0 <2.0.0"
-        required: true
-        on_missing: fail
-        priority: critical
-        
-      - channel: lidar
-        version: ">=1.0.0"
-        required: true
-        on_missing: fail
-        priority: critical
-        
-  optional_sensors:
-    requirements:
-      - channel: radar.v2
-        version: "^2.0.0"
-        required: false
-        on_missing: substitute
-        substitute_with:
-          channel: radar.v1
-          version: "1.0.0"
-        priority: medium
+  team: "应用开发团队"
+  version: "1.0.0"
+  created_at: "2025-04-10"
+  updated_at: "2025-04-10"
 
-global_config:
-  default_on_missing: ignore
-  # 注意：这里只定义SPEC层面的要求，不涉及具体数据量
+# 应用的数据需求
+requirements:
+  - channel: image_original
+    version: ">=1.0.0"
+    required: true
+    on_missing: "fail"  # 任务失败中断
+    
+  - channel: object_array_fusion_infer
+    version: ">=1.0.0"
+    required: true
+    on_missing: "substitute"  # 使用替代数据源
+    substitute_with:
+      channel: object_array_fusion_infer
+      version: ">=1.0.0"
+    
+  - channel: occupancy
+    version: "1.0.0"
+    required: false
+    on_missing: "ignore"  # 忽略缺失继续处理
 
+# 需求变更历史
+change_history:
+  - date: "2025-04-10"
+    version: "1.0.0"
+    changes: "初始版本：支持基础图像和目标检测需求"
+
+# 集成信息
 integration:
   jira_epic: "APP-2024-001"
   approval_status: "pending"
 EOF
 ```
 
-### 4. 创建生产Bundle
+#### 创建latest指针文件
+```bash
+# 创建指向当前推荐版本的符号链接
+cat > consumers/my_application/latest.yaml << EOF
+# This file points to the current recommended version: v1.0.0
+# In production, this would be a symbolic link: ln -s v1.0.0.yaml latest.yaml
+
+meta:
+  consumer: my_application
+  owner: "app-team@company.com"
+  description: "我的应用数据需求"
+  team: "应用开发团队"
+  version: "1.0.0"
+  created_at: "2025-04-10"
+  updated_at: "2025-04-10"
+
+# 当前数据需求 - 专注于版本依赖
+requirements:
+  - channel: image_original
+    version: ">=1.0.0"
+    required: true
+    on_missing: "fail"
+    
+  - channel: object_array_fusion_infer
+    version: ">=1.0.0"
+    required: true
+    on_missing: "substitute"
+    substitute_with:
+      channel: object_array_fusion_infer
+      version: ">=1.0.0"
+    
+  - channel: occupancy
+    version: "1.0.0"
+    required: false
+    on_missing: "ignore"
+
+# 需求变更历史
+change_history:
+  - date: "2025-04-10"
+    version: "1.0.0"
+    changes: "初始版本：支持基础图像和目标检测需求"
+EOF
+```
+
+### 4. 缺失处理策略详解
+
+缺失处理策略（`on_missing`）定义了当所需通道数据缺失时的处理方式：
+
+- **fail**: 任务失败中断，要求数据必须存在
+- **ignore**: 忽略缺失，继续处理其他可用数据  
+- **substitute**: 使用替代数据源，通过 `substitute_with` 指定
+- **use_default**: 使用预设的默认值（需在规范中定义默认值）
+
+#### 替代数据源配置
+```yaml
+on_missing: "substitute"
+substitute_with:
+  channel: backup_channel_name
+  version: ">=1.0.0"
+```
+
+### 5. 创建生产Bundle
 
 #### 定义Bundle配置
 ```bash
@@ -199,13 +333,13 @@ production_info:
     
 # SPEC到生产的映射关系
 channel_mappings:
-  - channel: img_cam1
+  - channel: image_original
     production_spec: "proj-img-cam1-2024-q1"
     release_spec: "1.0.0"
-    data_path: "/data/proj-2024-q1/img_cam1"
+    data_path: "/data/proj-2024-q1/image_original"
     
 channels:
-  - channel: img_cam1
+  - channel: image_original
     version: '1.0.0'
     required: true
     
@@ -230,23 +364,19 @@ python scripts/validate_bundles.py
 python scripts/validate_taxonomy.py
 ```
 
-### GitHub集成
+### CodeHub集成
 
-1. **提交PR时自动验证**
+1. **提交RR时自动验证**
    - 通道规范语法检查
    - 版本兼容性检查
    - 样本数据格式验证（非数量验证）
    - 与需求管理系统集成
 
-2. **PR标题格式**
+2. **RR标题格式**
    ```
-   [DATA_SPEC-123] Add new sensor channel specification
+   [RR/AR/DTS:******] 新增传感器通道规范
    ```
    系统会自动提取Issue ID并关联。
-
-3. **自动生成文档**
-   - 合并到main分支后自动生成通道文档
-   - 更新API文档和Schema文档
 
 ## 最佳实践
 
@@ -256,22 +386,28 @@ python scripts/validate_taxonomy.py
 - 向后兼容的新功能递增次版本号
 - Bug修复递增修订版本号
 
-### 2. 生产映射
-- 记录SPEC版本与生产批次的对应关系
-- 建立清晰的生产规格到发布规格映射
-- 记录数据收集的环境和条件
+### 2. 上游依赖管理
+- 使用 `upstream_dependencies` 字段记录数据来源和处理模块信息
+- 记录上游模块名称、版本号和数据来源话题
+- 建立清晰的数据处理链路和依赖关系
 
-### 3. 消费者需求
-- 按功能模块组织需求
-- 明确优先级（critical/high/medium/low）
-- 定义清晰的缺失处理策略
+### 3. 消费者需求管理
+- 使用 `latest.yaml` 指向当前推荐版本
+- 维护详细的 `change_history` 记录需求演进
+- 明确定义缺失处理策略和替代方案
 - 与需求管理系统保持同步
 
 ### 4. 质量保证
 - 每个通道必须包含样本数据（用于格式验证）
+- 维护详细的CHANGELOG.md记录所有变更
 - 定期审查和更新废弃通道
 - 监控SPEC变更的影响
 - 建立变更审批流程
+
+### 5. 性能监控
+- 记录详细的性能指标（推理时间、文件大小、准确率等）
+- 为AI模型通道维护benchmark数据
+- 监控版本升级对性能的影响
 
 ## 管理边界
 
@@ -281,6 +417,8 @@ python scripts/validate_taxonomy.py
 - ✅ Consumer需求约定
 - ✅ Bundle规格配置
 - ✅ 兼容性和影响分析
+- ✅ 上游依赖关系管理
+- ✅ 变更历史追踪
 
 ### 未来扩展范围（暂时hold）
 - 🔄 生产输入列表管理
@@ -309,6 +447,10 @@ python scripts/validate_taxonomy.py
 4. **版本兼容性冲突**
    - 检查消费者的版本约束
    - 更新通道的兼容性信息
+
+5. **缺失处理策略配置错误**
+   - 确认 `on_missing` 使用正确的策略值
+   - 检查 `substitute_with` 配置是否完整
 
 ### 联系支持
 

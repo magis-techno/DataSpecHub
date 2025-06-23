@@ -1,0 +1,53 @@
+# Bundle快照 - 版本清单记录
+# 将Consumer软约束转换为明确的版本清单
+
+meta:
+  bundle_name: end_to_end
+  consumer_version: "v1.2.0"        # Consumer版本
+  bundle_version: "v1.2.0-2025.25"  # Bundle版本（Consumer版本-年.周数）
+  bundle_type: weekly
+  created_at: "2025-06-20T14:30:00Z"
+  source_consumer: "consumers/end_to_end/latest.yaml"
+  description: "端到端网络数据快照 - 2025年第25周"
+
+# 来源追踪
+conversion_source:
+  consumer_config: "consumers/end_to_end/latest.yaml"
+  consumer_version: "v1.2.0"
+  conversion_time: "2025-06-20T14:30:00Z"
+  converted_by: "bundle_generator"
+
+# 版本清单 - Bundle的核心价值
+channels:
+  - channel: image_original
+    available_versions: ["1.2.0"]     # 精确版本要求
+    recommended_version: "1.2.0"
+    source_constraint: "1.2.0"        # 来自Consumer的约束
+    
+  - channel: object_array_fusion_infer  
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]  # 范围约束解析结果
+    recommended_version: "1.2.0"
+    source_constraint: ">=1.2.0"
+    
+  - channel: occupancy
+    available_versions: ["1.0.0"]
+    recommended_version: "1.0.0"
+    source_constraint: "1.0.0"
+    
+  - channel: utils_slam
+    available_versions: ["1.1.0", "1.0.0"]  # 范围约束解析结果
+    recommended_version: "1.1.0"
+    source_constraint: ">=1.0.0"
+
+# 完整性验证
+integrity:
+  constraint_hash: "e2e-v1.2.0-2025.25"     # 基于bundle版本
+  all_constraints_resolved: true
+  total_channels: 4
+  
+# 使用说明
+usage:
+  description: "端到端网络训练/测试的版本快照清单"
+  target_scenarios: ["e2e_training", "e2e_testing", "model_validation"]
+  data_loading: "根据available_versions列表选择具体版本进行数据获取"
+  recommended_strategy: "优先使用recommended_version，必要时可使用available_versions中的其他版本" 

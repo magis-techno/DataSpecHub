@@ -93,6 +93,12 @@ schema:
       value: "god_trans重建结果"
       description: "数据生成来源"
 
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "god_trans"
+  module_version: "v1.4.0"
+  description: "融合目标检测推理结果由god_trans模块重建生成"
+
 validation:
   file_extensions: [".json"]
   max_file_size: "5MB"
