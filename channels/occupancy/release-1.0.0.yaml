@@ -41,10 +41,6 @@ compatibility:
     - autonomous_driving: "路径规划模块"
     - traffic_light: "场景理解模块"
   
-  hardware_requirements:
-    min_memory: "2GB"
-    min_gpu_memory: "4GB"
-    recommended_gpu: "RTX 3070或以上"
 
 data_pipeline:
   input_sensors: 
@@ -58,18 +54,6 @@ data_pipeline:
     - "占据栅格生成"
   output_format: "PNG图像 + JSON元数据"
 
-deployment_info:
-  environments: ["开发", "测试", "生产"]
-  rollout_strategy: "灰度发布"
-  monitoring_metrics:
-    - "标注延迟"
-    - "准确性评分"
-    - "系统资源使用率"
-  
-  known_limitations:
-    - "动态物体追踪精度有限"
-    - "恶劣天气条件下性能下降"
-    - "对小物体检测能力不足"
 
 security:
   data_classification: "内部"

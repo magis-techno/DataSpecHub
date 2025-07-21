@@ -9,23 +9,15 @@ spec_ref: ./spec-1.0.0.yaml
 changes:
   - type: "feature"
     description: "初始版本，支持4Mbps压缩的原始图像数据"
-  - type: "feature"
-    description: "支持多车型的相机位置标识，标定信息分离至calibration通道"
+
 
 compatibility:
   backward_compatible: true
   breaking_changes: []
   deprecated_fields: []
 
-quality_metrics:
-  validation_passed: true
-  sample_coverage: 100%
-  format_compliance: 100%
-  compression_efficiency: 85%
-  
 performance:
   file_size_avg: "6.2MB"
-  processing_time: "120ms"
   
 lifecycle:
   status: stable

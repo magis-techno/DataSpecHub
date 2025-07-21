@@ -32,6 +32,12 @@ categories:
     desc: 自车位姿、SLAM、标定信息
     channels:
       - utils_slam 
+      
+  # 5. 处理后的传感器数据
+  sensor_processed:
+    desc: 经过处理和格式转换的传感器数据
+    channels:
+      - camera_parquet_data
   
 
 aliases:

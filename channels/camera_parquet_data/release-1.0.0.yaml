@@ -1,0 +1,36 @@
+meta:
+  channel: camera_parquet_data
+  version: 1.0.0
+  release_date: "2025-01-15"
+  release_type: major
+  
+spec_ref: ./spec-1.0.0.yaml
+
+changes:
+  - type: "feature"
+    description: "初始版本，支持4个相机的Parquet格式数据存储"
+  - type: "feature"  
+    description: "支持pickle序列化的二进制数据解析"
+  - type: "feature"
+    description: "固定相机配置：cam1, cam2, cam4, cam11"
+
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+  
+data_characteristics:
+  file_format: "parquet"
+  table_structure: "4行2列固定结构"
+  camera_count: 4
+  binary_encoding: "pickle"
+
+performance:
+  file_size_avg: "5MB"
+  loading_time: "< 1s"
+  memory_usage: "适中"
+  
+lifecycle:
+  status: stable
+  next_version: "1.1.0"
+  support_until: "2026-01-15" 

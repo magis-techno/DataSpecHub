@@ -14,20 +14,6 @@ schema:
     average_file_size: "2.0MB"
     color_space: RGB
     bit_depth: 8
-  
-  timestamp:
-    type: int64
-    unit: nanoseconds
-    description: "图像采集时间戳"
-      
-  metadata:
-    data_source:
-      type: string
-      value: "camera_encoded_0.bag"
-      description: "数据来源话题"
-    camera_position: 
-      type: string
-      description: "相机位置标识"
 
 # 上游依赖信息 - 数据来源和处理模块
 upstream_dependencies:
@@ -40,7 +26,7 @@ validation:
   file_extensions: [".jpg"]
   max_file_size: "8MB"
   average_file_size: "2.0MB"
-  
+
 lifecycle:
   status: stable
   created_at: "2024-01-01"

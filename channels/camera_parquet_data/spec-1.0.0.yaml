@@ -1,0 +1,63 @@
+meta:
+  channel: camera_parquet_data
+  version: 1.0.0
+  category: sensor_processed
+  description: "相机数据的Parquet格式存储，包含多个相机的二进制数据"
+  
+schema:
+  data_format:
+    type: parquet
+    encoding: [parquet]
+    structure: "每个文件包含4行2列的相机数据表"
+    
+  table_schema:
+    type: table
+    description: "相机数据表结构"
+    rows: 4
+    columns: 2
+    
+    column_definitions:
+      names:
+        type: string
+        description: "相机名称标识符"
+        enum: ["cam1", "cam2", "cam4", "cam11"]
+        required: true
+        position: 0
+        
+      datas:
+        type: binary
+        description: "相机数据的二进制内容，需要使用pickle.loads()解析"
+        encoding: pickle
+        required: true
+        position: 1
+        
+  data_processing:
+    loading_method: "pandas.read_parquet()"
+    parsing_requirement: "datas列需要使用pickle.loads()解析二进制内容"
+    
+  expected_cameras:
+    total_count: 4
+    camera_ids: ["cam1", "cam2", "cam4", "cam11"]
+    description: "固定的4个相机数据源"
+
+# 上游依赖信息 - 数据来源和处理模块
+upstream_dependencies:
+  module_name: "camera_data_processor"
+  module_version: "v1.0.0"
+  description: "相机数据经过处理后以Parquet格式存储"
+  data_sources: ["cam1", "cam2", "cam4", "cam11"]
+
+validation:
+  file_extensions: [".parquet"]
+  max_file_size: "50MB"
+  required_columns: ["names", "datas"]
+  row_count: 4
+  camera_validation:
+    required_cameras: ["cam1", "cam2", "cam4", "cam11"]
+    allow_missing: false
+    
+lifecycle:
+  status: stable
+  created_at: "2025-01-15"
+  updated_at: "2025-01-15"
+  maintainer: "camera-team@company.com" 

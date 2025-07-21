@@ -14,20 +14,6 @@ schema:
     average_file_size: "2.0MB"
     color_space: RGB
     bit_depth: 8
-  
-  timestamp:
-    type: int64
-    unit: nanoseconds
-    description: "图像采集时间戳"
-      
-  metadata:
-    data_source:
-      type: string
-      value: "camera_encoded_0.bag"
-      description: "数据来源话题"
-    camera_position: 
-      type: string
-      description: "相机位置标识"
 
 # 上游依赖信息 - 数据来源和处理模块
 upstream_dependencies:
@@ -35,10 +21,7 @@ upstream_dependencies:
   module_version: "v1.0.0"
   description: "原始图像数据由bev_lite模块处理生成"
   source_topic: "camera_encoded_0.bag"
-  # 注：实际数据中没有配套的元数据文件
-  # 以下信息需要从其他来源获取：
-  # - timestamp: 从文件名或文件系统时间戳提取
-  # - camera_position: 通过存储路径映射获得
+
 
 validation:
   file_extensions: [".jpg"]
