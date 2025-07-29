@@ -1,0 +1,89 @@
+meta:
+  channel: drivable_area_png
+  version: 1.0.0
+  release_date: "2025-01-15"
+  release_type: major
+  
+spec_ref: ./spec-1.0.0.yaml
+
+changes:
+  - type: "feature"
+    description: "初始版本，支持基于车体坐标系的可行驶域PNG数据"
+  - type: "feature"  
+    description: "支持3级可行驶域分类：可行驶(1)、受限(2)、禁行(3)"
+  - type: "feature"
+    description: "支持车体坐标系和像素坐标系的精确转换"
+  - type: "feature"
+    description: "支持可配置的体素大小和覆盖范围"
+
+compatibility:
+  backward_compatible: true
+  breaking_changes: []
+  deprecated_fields: []
+  
+data_characteristics:
+  file_format: "PNG grayscale"
+  pixel_values: [0, 1, 2, 3]
+  coordinate_system: "ego_vehicle (RDF)"
+  spatial_resolution: "可配置体素大小"
+  coverage_area: "车体周围矩形区域"
+
+performance:
+  file_size_avg: "1-3MB"
+  loading_time: "< 0.05s"
+  memory_usage: "低"
+  processing_speed: "实时"
+  grid_resolution: "通常0.1m/pixel"
+  
+use_cases:
+  - name: "路径规划"
+    description: "为自动驾驶路径规划提供可行驶域约束"
+  - name: "运动规划"
+    description: "车辆运动规划的空间约束输入"
+  - name: "安全监控"
+    description: "实时监控车辆周围的可行驶状态"
+  - name: "决策支持"
+    description: "为行为决策模块提供环境理解"
+    
+technical_specifications:
+  pixel_encoding: "8-bit grayscale"
+  coordinate_precision: "float32"
+  max_coverage_range: "100m x 100m"
+  min_voxel_size: "0.05m/pixel"
+  max_voxel_size: "0.5m/pixel"
+  
+algorithm_info:
+  generation_method: "多传感器融合 + 语义分割"
+  input_sensors: ["相机", "激光雷达", "毫米波雷达"]
+  processing_stages:
+    - "传感器数据融合"
+    - "语义分割和目标检测"
+    - "空间占据栅格生成"
+    - "可行驶域分类"
+    - "栅格投影和编码"
+    
+quality_metrics:
+  accuracy: "可行驶域分类准确率 > 95%"
+  latency: "数据生成延迟 < 100ms"
+  coverage: "车体周围50m范围覆盖"
+  update_rate: "10Hz实时更新"
+  
+integration:
+  downstream_consumers:
+    - "path_planner": "路径规划模块"
+    - "motion_planner": "运动规划模块" 
+    - "safety_monitor": "安全监控模块"
+    - "decision_maker": "决策模块"
+    
+  data_flow:
+    input: "多传感器原始数据"
+    processing: "融合 -> 分割 -> 栅格化"
+    output: "可行驶域PNG + 元数据"
+    
+lifecycle:
+  status: stable
+  next_version: "1.1.0"
+  support_until: "2026-01-15"
+  roadmap:
+    - "v1.1.0: 支持动态障碍物预测"
+    - "v1.2.0: 增加置信度图层" 

@@ -38,6 +38,8 @@ categories:
     desc: 经过处理和格式转换的传感器数据
     channels:
       - camera_parquet_data
+      - rasterized_png_data
+      - drivable_area_png
   
 
 aliases:

@@ -1,0 +1,27 @@
+{
+    "meta": {
+        "release_name": "JointTrain_20250727",
+        "consumer_version": "v1.2.0",
+        "bundle_version": "v1.2.0-20250620-143500",
+        "created_at": "2025-07-27 15:00:00",
+        "description": "基础模型联合训练数据集",
+        "version": "v1.2.0"
+    },
+    "dataset_index": [
+        {
+            "name": "enter_waiting_red2green_494",
+            "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/waiting_area/golden0520_pkl7.8_enter_waiting_red2green_clip_494_frame_25252.jsonl.shrink",
+            "duplicate": 8
+        },
+        {
+            "name": "simple_合理博弈导航换道_18873",
+            "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/clip/simple_合理博弈导航换道_18873.jsonl.shrink",
+            "duplicate": 3
+        },
+        {
+            "name": "highway_behavior_dataset",
+            "obs_path": "obs://external-data/highway_behavior.jsonl",
+            "duplicate": 2
+        }
+    ]
+} 

@@ -1,0 +1,70 @@
+# 变更记录 - 每个操作有独立key
+meta:
+  current_version: "v1.2.0"
+  last_updated: "2025-07-27"
+  base_consumer: "v1.2.0"
+  base_bundle: "v1.2.0-20250620-143500"
+
+operations:
+  op_001:
+    date: "2025-07-25"
+    type: "cleaning"
+    operator: "张三"
+    version_change: "v1.0.0 → v1.1.0"
+    description: "去重和质量过滤"
+    datasets:
+      - name: "enter_waiting_red2green_494"
+        action: "remove"
+        clips_removed: 2072
+        clips_before: 25252
+        clips_after: 23180
+        removed_clips_file: "removed_clips/op_001_enter_waiting_removed.txt"
+      - name: "simple_合理博弈导航换道_18873"
+        action: "remove"
+        clips_removed: 2
+        clips_before: 18873
+        clips_after: 18871
+        removed_clips_file: "removed_clips/op_001_simple_navigation_removed.txt"
+
+  op_002:
+    date: "2025-07-26"
+    type: "mining"
+    operator: "李四"
+    version_change: "v1.1.0 → v1.2.0"
+    description: "合入外部高速公路数据"
+    datasets:
+      - name: "highway_behavior_dataset"
+        action: "add"
+        source_path: "obs://external-data/highway_behavior.jsonl"
+        clips_added: 8500
+        duplicate: 2
+        total_training_clips: 17000
+
+  op_003:
+    date: "2025-07-27"
+    type: "balancing"
+    operator: "王五"
+    version_change: "v1.2.0 (内部调整)"
+    description: "调整场景分布平衡"
+    datasets:
+      - name: "simple_合理博弈导航换道_18873"
+        action: "remove"
+        clips_removed: 426
+        clips_before: 18871
+        clips_after: 18445
+        removed_clips_file: "removed_clips/op_003_simple_navigation_removed.txt"
+        reason: "场景过多，调整平衡"
+
+  op_004:
+    date: "2025-07-28"
+    type: "dataset_add"
+    operator: "赵六"
+    version_change: "v1.2.0 → v1.3.0"
+    description: "新增外部合作数据集"
+    git_commit: "a1b2c3d"
+    datasets:
+      - name: "partner_weather_dataset"
+        action: "add_dataset"
+        source_path: "obs://partner-data/weather_scenarios.jsonl"
+        clips_added: 12000
+        duplicate: 1 

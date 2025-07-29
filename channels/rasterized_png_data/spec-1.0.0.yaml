@@ -1,0 +1,114 @@
+meta:
+  channel: rasterized_png_data
+  version: 1.0.0
+  category: perception_output
+  description: "栅格化PNG数据，像素值编码特定的语义信息"
+  
+schema:
+  data_format:
+    type: rasterized_image
+    encoding: [png]
+    structure: "PNG图像，每个像素值代表特定的类别或数值"
+    
+  image_properties:
+    format: "PNG"
+    bit_depth: 8  # 可选：8, 16
+    color_mode: "grayscale"  # 或 "indexed", "rgb"
+    channels: 1
+    
+  pixel_encoding:
+    type: "categorical"  # 或 "numerical", "binary"
+    description: "像素值的编码类型和含义"
+    
+    # 类别编码示例（根据具体应用调整）
+    value_mapping:
+      0: 
+        label: "background"
+        description: "背景/无效区域"
+        color: [0, 0, 0]
+      1:
+        label: "road"
+        description: "道路区域"
+        color: [128, 64, 128]
+      2:
+        label: "vehicle"
+        description: "车辆"
+        color: [0, 0, 142]
+      3:
+        label: "pedestrian"
+        description: "行人"
+        color: [220, 20, 60]
+      4:
+        label: "obstacle"
+        description: "障碍物"
+        color: [119, 11, 32]
+      # 可根据具体需求添加更多类别
+        
+  coordinate_system:
+    origin: "top_left"  # 图像坐标系原点
+    axes: "xy"  # x向右，y向下
+    resolution:
+      type: float
+      unit: "meters_per_pixel"
+      value: 0.1
+      description: "每个像素代表的实际距离"
+    coverage_area:
+      width_meters: 100.0
+      height_meters: 100.0
+      description: "栅格覆盖的实际区域大小"
+      
+  data_interpretation:
+    loading_method: "cv2.imread() 或 PIL.Image.open()"
+    pixel_access: "image[y, x] 获取像素值"
+    value_range: [0, 255]  # 像素值范围
+    invalid_value: 0  # 无效/未知区域的像素值
+    
+  optional_metadata:
+    timestamp:
+      type: int64
+      unit: nanoseconds
+      description: "数据生成时间戳"
+    confidence_map:
+      type: "optional_png"
+      description: "可选的置信度图，同尺寸PNG文件"
+    transform_matrix:
+      type: array
+      shape: [4, 4]
+      description: "从像素坐标到世界坐标的变换矩阵"
+
+# 上游依赖信息 - 数据来源和处理模块  
+upstream_dependencies:
+  module_name: "rasterization_processor"
+  module_version: "v1.0.0"
+  description: "3D数据栅格化处理模块"
+  input_data_types: ["point_cloud", "3d_objects", "semantic_labels"]
+
+validation:
+  file_extensions: [".png"]
+  max_file_size: "10MB"
+  min_resolution: [64, 64]
+  max_resolution: [2048, 2048]
+  pixel_value_constraints:
+    min_value: 0
+    max_value: 255
+    valid_values: "根据value_mapping定义"
+    
+processing_guidelines:
+  loading_example: |
+    import cv2
+    import numpy as np
+    
+    # 加载PNG文件
+    image = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+    
+    # 根据像素值获取语义信息
+    semantic_mask = image == target_class_id
+    
+    # 转换为世界坐标（如果需要）
+    # world_coords = pixel_to_world(pixel_coords, transform_matrix)
+    
+lifecycle:
+  status: stable
+  created_at: "2025-01-15"
+  updated_at: "2025-01-15"
+  maintainer: "perception-team@company.com" 

@@ -1,0 +1,179 @@
+meta:
+  channel: drivable_area_png
+  version: 1.0.0
+  category: perception_output
+  description: "可行驶域PNG数据，基于车体坐标系的栅格化表示"
+  
+schema:
+  data_format:
+    type: drivable_area_grid
+    encoding: [png]
+    structure: "PNG图像，每个像素表示可行驶域的不同状态"
+    
+  image_properties:
+    format: "PNG"
+    bit_depth: 8
+    color_mode: "grayscale"
+    channels: 1
+    
+  pixel_encoding:
+    type: "categorical"
+    description: "可行驶域状态编码"
+    
+    # 可行驶域像素值含义
+    value_mapping:
+      1: 
+        label: "drivable"
+        description: "可行驶区域"
+        color: [0, 255, 0]  # 绿色
+        semantics: "车辆可以安全通行的区域"
+        
+      2:
+        label: "restricted"
+        description: "受限制行驶区域"
+        color: [255, 255, 0]  # 黄色
+        semantics: "有条件可行驶，需要谨慎通行"
+        
+      3:
+        label: "non_drivable"
+        description: "不可行驶区域"
+        color: [255, 0, 0]  # 红色
+        semantics: "禁止通行区域，包括障碍物、路边等"
+        
+      0:
+        label: "unknown"
+        description: "未知区域"
+        color: [128, 128, 128]  # 灰色
+        semantics: "数据未覆盖或无效的区域"
+        
+  coordinate_system:
+    reference_frame: "ego_vehicle"
+    origin: "vehicle_center"
+    axes: "RDF"  # Right-Down-Forward (右-下-前)
+    description: "以车体中心为原点的右手坐标系"
+    
+    # 车体中心在图像中的位置
+    vehicle_center_pixel:
+      type: array
+      shape: [2]
+      description: "车体中心在PNG图像中的像素坐标 [x, y]"
+      example: [512, 512]  # 假设在1024x1024图像的中心
+      
+    # 体素大小和空间范围
+    spatial_properties:
+      voxel_size:
+        type: float
+        unit: "meters_per_pixel"
+        description: "每个像素对应的实际距离"
+        example: 0.1  # 10cm/pixel
+        
+      coverage_range:
+        forward:
+          type: float
+          unit: "meters"
+          description: "向前覆盖距离"
+          example: 50.0
+        backward:
+          type: float
+          unit: "meters" 
+          description: "向后覆盖距离"
+          example: 10.0
+        left:
+          type: float
+          unit: "meters"
+          description: "向左覆盖距离"
+          example: 25.0
+        right:
+          type: float
+          unit: "meters"
+          description: "向右覆盖距离"
+          example: 25.0
+          
+      total_coverage:
+        width_meters: "left + right距离"
+        height_meters: "forward + backward距离"
+        description: "栅格覆盖的总实际区域"
+        
+  data_interpretation:
+    loading_method: "cv2.imread(path, cv2.IMREAD_GRAYSCALE)"
+    pixel_access: "image[y, x]获取像素值"
+    value_range: [0, 3]
+    invalid_value: 0
+    
+    coordinate_transform:
+      pixel_to_vehicle: |
+        # 像素坐标转车体坐标
+        x_vehicle = (pixel_x - center_x) * voxel_size
+        y_vehicle = (center_y - pixel_y) * voxel_size  # 图像y轴向下，车体y轴向左
+      vehicle_to_pixel: |
+        # 车体坐标转像素坐标  
+        pixel_x = x_vehicle / voxel_size + center_x
+        pixel_y = center_y - y_vehicle / voxel_size
+        
+  metadata:
+    timestamp:
+      type: int64
+      unit: nanoseconds
+      description: "可行驶域数据生成时间戳"
+      
+    generation_params:
+      algorithm_version:
+        type: string
+        description: "生成算法版本"
+        
+      confidence_threshold:
+        type: float
+        range: [0.0, 1.0]
+        description: "可行驶域判断的置信度阈值"
+        
+      sensor_fusion:
+        type: array
+        description: "参与融合的传感器列表"
+        example: ["camera", "lidar", "radar"]
+
+# 上游依赖信息
+upstream_dependencies:
+  module_name: "drivable_area_generator"
+  module_version: "v2.0.0"
+  description: "基于多传感器融合的可行驶域生成模块"
+  input_sensors: ["front_camera", "lidar", "radar"]
+  processing_chain: ["sensor_fusion", "semantic_segmentation", "grid_mapping"]
+
+validation:
+  file_extensions: [".png"]
+  max_file_size: "5MB"
+  min_resolution: [256, 256]
+  max_resolution: [2048, 2048]
+  
+  pixel_value_constraints:
+    valid_values: [0, 1, 2, 3]
+    required_values: [1, 2, 3]  # 必须包含可行驶域状态
+    
+  spatial_consistency:
+    vehicle_center_bounds: "必须在图像范围内"
+    coverage_ratio: "可行驶区域应占合理比例"
+    
+processing_guidelines:
+  loading_example: |
+    import cv2
+    import numpy as np
+    
+    # 加载可行驶域PNG
+    drivable_map = cv2.imread(filepath, cv2.IMREAD_GRAYSCALE)
+    
+    # 提取不同区域
+    drivable_mask = (drivable_map == 1)
+    restricted_mask = (drivable_map == 2) 
+    blocked_mask = (drivable_map == 3)
+    
+    # 坐标转换
+    def pixel_to_vehicle_coords(px, py, center_x, center_y, voxel_size):
+        x_vehicle = (px - center_x) * voxel_size
+        y_vehicle = (center_y - py) * voxel_size
+        return x_vehicle, y_vehicle
+        
+lifecycle:
+  status: stable
+  created_at: "2025-01-15"
+  updated_at: "2025-01-15"
+  maintainer: "planning-team@company.com" 
