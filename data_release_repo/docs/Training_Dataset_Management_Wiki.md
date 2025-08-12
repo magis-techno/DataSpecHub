@@ -1,5 +1,7 @@
 # 训练数据集管理 Wiki
 
+作者：
+
 ## 概述
 
 本文档定义了训练数据集发布后的版本管理和操作追踪规范，用于管理数据策划过程中的清洗、新增、调平等操作。
@@ -65,7 +67,7 @@ training_repo/
 
 ```yaml
 date: "2025-07-28"
-type: "clean"   # clean | balance | add | mining | filtering | dataset_add | dataset_remove | clean_dataset
+type: "modify(clean)"   # add | modify(clean) | modify(balance)
 description: "对大数据集进行整体清洗"
 task_tag: ""     # 任务单/工单编号；手动操作留空
 details:          # 可选，按需补充
@@ -78,21 +80,15 @@ details:          # 可选，按需补充
 
 #### 类型枚举（用于 Commit 的 `type` 字段）
 
-- **clean**: 数据清洗（去重、质量过滤、大数据集清洗）
-- **mining**: 数据挖掘（新增外部数据集）
-- **balance**: 数据平衡（调整场景分布）
-- **filtering**: 数据过滤（移除特定条件数据）
-- **dataset_add**: 新增整个数据集
-- **dataset_remove**: 删除整个数据集
+- **add**: 新增数据集或 clips
+- **modify(clean)**: 清洗类修改（去重、质量过滤、整体清洗等）
+- **modify(balance)**: 平衡类修改（调整场景/类别分布等）
 
 #### 动作类型
 
-- **add**: 新增数据集或clips
-- **remove**: 删除clips或数据集
-- **modify**: 修改existing数据
-- **add_dataset**: 新增整个数据集
-- **remove_dataset**: 删除整个数据集
-- **clean_dataset**: 对整个大数据集进行清洗
+- **add**: 新增数据集或 clips
+- **modify(clean)**: 清洗类修改（去重、质量过滤、整体清洗等）
+- **modify(balance)**: 平衡类修改（调整场景/类别分布等）
 
 <!-- 预留“删除详情格式”章节，当前按需再启用 -->
 
@@ -150,7 +146,7 @@ details:          # 可选，按需补充
 - Commit message 建议使用结构化正文：
   ```yaml
   date: "2025-07-28"
-  type: "clean"   # clean | balance | add | mining | filtering | dataset_add | dataset_remove | clean_dataset
+  type: "modify(clean)"   # add | modify(clean) | modify(balance)
   description: "对大数据集进行整体清洗"
   task_tag: ""     # 任务单/工单编号；手动操作留空
   ```
