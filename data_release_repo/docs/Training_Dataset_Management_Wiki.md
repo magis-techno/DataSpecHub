@@ -15,15 +15,7 @@
 
 ```
 training_repo/
-├── training_dataset.json           # 当前最终结果
-└── dataset_history/                 # 变更历史目录
-    ├── changes.yaml                # 主变更记录
-    ├── removed_clips/              # 删除条目跟踪
-    │   ├── op_001_enter_waiting_removed.txt
-    │   └── op_002_simple_navigation_removed.txt
-    └── snapshots/                  # 关键版本备份
-        ├── baseline_v1.0.0.json
-        └── final_v1.2.0.json
+└── training_dataset.json           # 当前最终结果（由 Tag/Release 所在 commit 固化）
 ```
 
 ## 文件格式规范
@@ -67,105 +59,31 @@ training_repo/
 - **bundle_version**: 对应的Bundle版本，格式：`v{version}-{timestamp}`
 - **version**: 当前训练数据集版本，语义化版本格式
 
-### 2. changes.yaml (变更记录)
+### 2. 提交信息模板（以 Git Commit 追踪变更）
+
+使用结构化 Commit Message 作为唯一变更记录载体：
 
 ```yaml
-# 变更记录 - 每个操作有独立key
-meta:
-  current_version: "v1.2.0"
-  last_updated: "2025-07-27"
-  base_consumer: "v1.2.0"
-  base_bundle: "v1.2.0-20250620-143500"
-
-operations:
-  op_001:
-    date: "2025-07-25"
-    type: "cleaning"
-    operator: "张三"
-    version_change: "v1.0.0 → v1.1.0"
-    description: "去重和质量过滤"
-    datasets:
-      - name: "enter_waiting_red2green_494"
-        action: "remove"
-        clips_removed: 2072
-        clips_before: 25252
-        clips_after: 23180
-        removed_clips_file: "removed_clips/op_001_enter_waiting_removed.txt"
-      - name: "simple_合理博弈导航换道_18873"
-        action: "remove"
-        clips_removed: 2
-        clips_before: 18873
-        clips_after: 18871
-        removed_clips_file: "removed_clips/op_001_simple_navigation_removed.txt"
-
-  op_002:
-    date: "2025-07-26"
-    type: "mining"
-    operator: "李四"
-    version_change: "v1.1.0 → v1.2.0"
-    description: "合入外部高速公路数据"
-    datasets:
-      - name: "highway_behavior_dataset"
-        action: "add"
-        source_path: "obs://external-data/highway_behavior.jsonl"
-        clips_added: 8500
-        duplicate: 2
-        total_training_clips: 17000
-
-  op_003:
-    date: "2025-07-27"
-    type: "balancing"
-    operator: "王五"
-    version_change: "v1.2.0 (内部调整)"
-    description: "调整场景分布平衡"
-    datasets:
-      - name: "simple_合理博弈导航换道_18873"
-        action: "remove"
-        clips_removed: 426
-        clips_before: 18871
-        clips_after: 18445
-        removed_clips_file: "removed_clips/op_003_simple_navigation_removed.txt"
-        reason: "场景过多，调整平衡"
-
-  op_004:
-    date: "2025-07-28"
-    type: "cleaning"
-    operator: "赵六"
-    version_change: "v1.2.0 → v1.2.1"
-    description: "对大数据集进行整体清洗"
-    git_commit: "a1b2c3d"  # 引用Git commit（如涉及数据集级变更）
-    datasets:
-      - name: "mega_driving_dataset_v2"
-        action: "clean_dataset"
-        total_clips_before: 500000
-        clips_removed: 50000
-        clips_after: 450000
-        removed_clips_file: "removed_clips/op_004_mega_dataset_removed.txt"
-        reason: "大规模质量过滤和去重"
-
-  op_005:
-    date: "2025-07-29"
-    type: "dataset_add"
-    operator: "孙七"
-    version_change: "v1.2.1 → v1.3.0"
-    description: "新增外部合作伙伴数据集"
-    git_commit: "b2c3d4e"  # Git commit记录数据集级变更
-    datasets:
-      - name: "partner_weather_dataset"
-        action: "add_dataset"
-        source_path: "obs://partner-data/weather_scenarios.jsonl"
-        clips_added: 25000
-        duplicate: 1
+date: "2025-07-28"
+type: "clean"   # clean | balance | add | mining | filtering | dataset_add | dataset_remove | clean_dataset
+description: "对大数据集进行整体清洗"
+task_tag: ""     # 任务单/工单编号；手动操作留空
+details:          # 可选，按需补充
+  dataset: "mega_driving_dataset_v2"
+  total_clips_before: 500000
+  clips_removed: 50000
+  clips_after: 450000
+  # 可选更多明细字段
 ```
 
-#### 操作类型
+#### 类型枚举（用于 Commit 的 `type` 字段）
 
-- **cleaning**: 数据清洗（去重、质量过滤、大数据集清洗）
+- **clean**: 数据清洗（去重、质量过滤、大数据集清洗）
 - **mining**: 数据挖掘（新增外部数据集）
-- **balancing**: 数据平衡（调整场景分布）
+- **balance**: 数据平衡（调整场景分布）
 - **filtering**: 数据过滤（移除特定条件数据）
-- **dataset_add**: 新增整个数据集（可结合Git管理）
-- **dataset_remove**: 删除整个数据集（可结合Git管理）
+- **dataset_add**: 新增整个数据集
+- **dataset_remove**: 删除整个数据集
 
 #### 动作类型
 
@@ -176,38 +94,73 @@ operations:
 - **remove_dataset**: 删除整个数据集
 - **clean_dataset**: 对整个大数据集进行清洗
 
-### 3. removed_clips 文件格式
+<!-- 预留“删除详情格式”章节，当前按需再启用 -->
 
-```
-# 操作: op_001 - 数据清洗
-# 数据集: enter_waiting_red2green_494
-# 删除时间: 2025-07-25
-# 删除原因: 去重和质量过滤
-# 删除数量: 2072
+### 4. 快照说明
 
-# 删除的clips列表 (clip token/uuid)
-550e8400-e29b-41d4-a716-446655440001    # 重复: 与另一clip相似度0.98
-550e8400-e29b-41d4-a716-446655440123    # 质量低: 评分0.3，时长2.1s  
-550e8400-e29b-41d4-a716-446655440234    # 重复: 与另一clip相似度0.95
-550e8400-e29b-41d4-a716-446655440345    # 质量低: 缺少目标物体
-...
-# (共2072个token)
-```
-
-### 4. snapshots 文件格式
-
-Snapshot文件与 `training_dataset.json` 格式完全相同，只是代表不同时间点的状态。
+以 Tag/Release 固化的 commit 即为快照，快照内容即该 commit 下的 `training_dataset.json`。
 
 ## 操作流程
 
 ### 基本操作步骤
 
 1. **执行数据操作**（清洗、新增、调平等）
-2. **记录操作信息**：更新 `changes.yaml` 添加新操作记录
-3. **记录删除详情**：如有删除操作，记录clip tokens到 `removed_clips/` 文件
-4. **更新结果文件**：更新 `training_dataset.json`
-5. **Git管理**：对于数据集级操作，建议结合Git commit记录
-6. **创建快照**：重要版本节点创建snapshot备份
+2. **更新结果文件**：更新 `training_dataset.json`
+3. **提交变更**：使用结构化 Commit Message（见“提交信息模板”）
+4. **固化版本**：专题交付打 Tag；大版本创建 Release
+
+
+
+## 分支、Tag 与 Release 策略
+
+### 交付物定义
+- 唯一交付物：某个代码仓的特定分支上的特定 commit（通过 Tag 固化）。
+- 大版本发布：在关键 Tag 基础上创建 Release（Release 是 Tag 的子集，面向对外/对内广泛消费的稳定版本）。
+
+### 分支命名
+- `feature_dataset/<topic>/<method>` 示例：`feature_dataset/toll_station/strict`
+- `experiment/<topic>/<trial>` 示例：`experiment/toll_station/ablation-01`
+- 任意分支（含 `master` 与 `feature_dataset/*`）均可直接在 IDE 中进行编辑与验证。
+
+### Tag 规范
+- 专题数据交付：仅打 Tag，不必创建 Release。
+  - 命名：`feature_dataset/<topic>/release-YYYYMMDD`，例如：`feature_dataset/toll_station/release-20250709`
+  - 可选别名：`<topic>-<YYMMDD>`（便于人读）。
+- Tag 注释建议包含追溯元信息：
+  ```yaml
+  release_name: "feature_dataset/toll_station/release-20250709"
+  consumer_version: "v1.2.0"
+  bundle_version: "v1.2.0-20250620-143500"
+  training_dataset_version: "v1.2.0"
+  ```
+
+### Release 规范（大版本）
+- 何时创建：面向广泛消费、需要稳定性的里程碑版本（例如 `v1.2.0`）。
+- 与 Tag 的关系：Release 指向某个已存在的 Tag；内容应是 Tag 的严格子集和说明补充。
+- 建议命名：
+  - Release 名称：`TrainingDataset v<MAJOR>.<MINOR>.<PATCH>`（示例：`TrainingDataset v1.2.0`）
+  - 对应 Tag：`training/v<MAJOR>.<MINOR>.<PATCH>` 或具体业务自定义命名
+- Release 说明应包含：
+  - 基线来源：`consumer_version`、`bundle_version`
+  - 数据规模与要点：clips 统计、关键操作摘要
+- 追溯信息：Tag/Release 注释 + commit hash；可选附本次变更统计
+
+### 提交信息规范（强制）
+- 所有对数据的有效变更必须体现在 `training_dataset.json`；提交时使用结构化 Commit Message。
+- Commit message 建议使用结构化正文：
+  ```yaml
+  date: "2025-07-28"
+  type: "clean"   # clean | balance | add | mining | filtering | dataset_add | dataset_remove | clean_dataset
+  description: "对大数据集进行整体清洗"
+  task_tag: ""     # 任务单/工单编号；手动操作留空
+  ```
+
+### 场景与操作
+- 场景1（常规演进）：在 `master` 或 `feature_dataset/*` 分支编辑，按需打 Tag；里程碑版本创建 Release。
+- 场景2（golden 上做单点实验）：从 golden 拉 `experiment/<topic>/<trial>`，对专题分支变更做 cherry-pick；实验 Tag 仅内部可见，不创建 Release。
+
+### 长期规划
+- 通过 IDE/自动化纳管上述操作，校验提交模板、自动生成快照与统计，并辅助创建 Tag/Release。
 
 
 
@@ -233,8 +186,8 @@ foundational_model/v1.0.0.yaml → foundational_model-v1.0.0-20250620-143500.yam
 
 ### 1. 操作记录
 
-- 每次操作必须记录在 `changes.yaml` 中
-- 删除操作必须保存具体的删除列表
+- 每次操作以结构化 Commit Message 记录
+- 删除操作建议保存具体的删除列表
 - 操作描述要清晰明确
 
 ### 2. 版本追溯
@@ -268,7 +221,7 @@ foundational_model/v1.0.0.yaml → foundational_model-v1.0.0-20250620-143500.yam
 
 可以开发简单的脚本来：
 - 自动生成operation ID
-- 验证changes.yaml格式
+- 校验提交模板与字段完整性
 - 自动创建snapshot
 - 生成统计报告
 
@@ -281,7 +234,7 @@ A: 是的，但这是必要的。可以考虑压缩存储或定期归档。
 A: 建议串行操作，避免同时修改同一个数据集。
 
 ### Q: 大数据集清洗和普通数据集清洗有什么区别？
-A: 大数据集清洗通常涉及更多clips，建议结合Git管理数据集级变更，并在changes.yaml中引用对应的commit。
+A: 大数据集清洗通常涉及更多 clips，建议使用结构化 Commit Message，并按需在提交正文中纳入简要统计（如移除数量、规则说明）。
 
-### Q: 何时使用Git管理，何时使用changes.yaml？
-A: 建议混合管理 - changes.yaml记录所有操作详情，Git commit记录数据集级变更，在changes.yaml中引用commit hash。 
+### Q: 如何仅依靠 Git 完成追溯？
+A: 通过结构化 Commit Message + Tag/Release 固化交付点；必要时在提交中包含摘要明细。
