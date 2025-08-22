@@ -39,13 +39,13 @@ training_repo/
         {
             "name": "enter_waiting_red2green_494",
             "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/waiting_area/golden0520_pkl7.8_enter_waiting_red2green_clip_494_frame_25252.jsonl.shrink",
-            "source_bundle_versions": ["v1.2.0-20250620-143500"],
+            "bundle_versions": ["v1.2.0-20250620-143500"],
             "duplicate": 8
         },
         {
             "name": "highway_merge_mixed_dataset",
             "obs_path": "obs://training-data/highway_merge_mixed.jsonl",
-            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+            "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
             "duplicate": 3
         }
     ]
@@ -69,12 +69,8 @@ training_repo/
         {
             "name": "dagger_correction_scenarios_001",
             "obs_path": "obs://dagger-data/correction_scenarios.jsonl",
-            "source_bundle_versions": ["v1.2.0-20250620-143500"],
+            "bundle_versions": ["v1.2.0-20250620-143500"],
             "duplicate": 1,
-            "dagger_meta": {
-                "correction_type": "trajectory_adjustment",
-                "expert_intervention_rate": 0.15
-            }
         }
     ]
 }
@@ -92,9 +88,8 @@ training_repo/
 **Dataset字段：**
 - **name**: 数据集唯一名称（IDE生成或手工命名，确保唯一性）
 - **obs_path**: 数据集存储路径（生产前为空，生产后回写）
-- **source_bundle_versions**: 数据集来源的Bundle版本列表，支持混合版本场景
+- **bundle_versions**: 数据集来源的Bundle版本列表，支持混合版本场景
 - **duplicate**: 数据复制倍数
-- **dagger_meta**: DAgger专用元信息（仅dagger文件使用）
 
 #### 使用场景
 
@@ -120,7 +115,7 @@ training_dataset.json具有**双重用途**：既是生产配置输入，也是�
         {
             "name": "highway_merge_mixed_dataset",
             "obs_path": "",  // 空路径，等待生产
-            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+            "bundle_versions": ["v1.1.0-20250618"],
             "duplicate": 3,
             "status": "pending"
         }
@@ -130,7 +125,7 @@ training_dataset.json具有**双重用途**：既是生产配置输入，也是�
 
 #### 生产过程
 1. **解析配置**：生产系统读取配置文件，识别`obs_path`为空的待生产数据集
-2. **混合版本处理**：根据`source_bundle_versions`从多个Bundle中获取数据
+2. **混合版本处理**：根据dataset级别的`bundle_versions`从多个Bundle中获取数据
 3. **数据挖掘/合并**：调用外部工具进行数据处理（挖掘过程不纳管）
 4. **生成数据**：产出最终的JSONL文件到OBS
 
@@ -149,7 +144,7 @@ training_dataset.json具有**双重用途**：既是生产配置输入，也是�
         {
             "name": "highway_merge_mixed_dataset",
             "obs_path": "obs://training-data/highway_merge_mixed.jsonl",  // 回写路径
-            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+            "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
             "duplicate": 3,
             "status": "produced",
             "produced_at": "2025-07-27 16:30:00"
