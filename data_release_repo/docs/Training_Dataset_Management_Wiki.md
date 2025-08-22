@@ -10,26 +10,27 @@
 
 1. **DataSpecHub仓库**：定义数据规格和通道需求（设计阶段）
 2. **生产发布**：基于规格生产并发布数据到训练仓库
-3. **训练仓库**：包含 `training_dataset.json`（发布产物的索引）
-4. **数据策划**：在 `training_dataset.json` 基础上进行清洗、新增、调平等操作
+3. **训练仓库**：包含训练数据集索引文件，支持常规训练和DAgger训练
+4. **数据策划**：基于索引文件进行清洗、新增、调平等操作，支持混合版本数据挖掘
 
 ## 目录结构
 
 ```
 training_repo/
-└── training_dataset.json           # 当前最终结果（由 Tag/Release 所在 commit 固化）
+├── training_dataset.json           # 常规训练数据集索引（由 Tag/Release 所在 commit 固化）
+└── training_dataset.dagger.json    # DAgger训练专用数据集索引（特殊处理，避免误加载）
 ```
 
 ## 文件格式规范
 
-### 1. training_dataset.json (主文件)
+### 1. training_dataset.json (常规训练数据)
 
 ```json
 {
     "meta": {
         "release_name": "JointTrain_20250727",
         "consumer_version": "v1.2.0",
-        "bundle_version": "v1.2.0-20250620-143500",
+        "bundle_versions": ["v1.2.0-20250620-143500"],
         "created_at": "2025-07-27 15:00:00",
         "description": "端到端网络联合训练数据集",
         "version": "v1.2.0"
@@ -38,17 +39,42 @@ training_repo/
         {
             "name": "enter_waiting_red2green_494",
             "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/waiting_area/golden0520_pkl7.8_enter_waiting_red2green_clip_494_frame_25252.jsonl.shrink",
+            "source_bundle_versions": ["v1.2.0-20250620-143500"],
             "duplicate": 8
         },
         {
-            "name": "simple_合理博弈导航换道_18873",
-            "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/clip/simple_合理博弈导航换道_18873.jsonl.shrink",
+            "name": "highway_merge_mixed_dataset",
+            "obs_path": "obs://training-data/highway_merge_mixed.jsonl",
+            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
             "duplicate": 3
-        },
+        }
+    ]
+}
+```
+
+### 2. training_dataset.dagger.json (DAgger训练专用)
+
+```json
+{
+    "meta": {
+        "release_name": "DAgger_OnlineTraining_20250727", 
+        "consumer_version": "v1.2.0",
+        "bundle_versions": ["v1.2.0-20250620-143500"],
+        "created_at": "2025-07-27 15:00:00",
+        "description": "DAgger在线训练专用数据集",
+        "version": "v1.2.0",
+        "training_type": "dagger"
+    },
+    "dataset_index": [
         {
-            "name": "highway_behavior_dataset",
-            "obs_path": "obs://external-data/highway_behavior.jsonl",
-            "duplicate": 2
+            "name": "dagger_correction_scenarios_001",
+            "obs_path": "obs://dagger-data/correction_scenarios.jsonl",
+            "source_bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "dagger_meta": {
+                "correction_type": "trajectory_adjustment",
+                "expert_intervention_rate": 0.15
+            }
         }
     ]
 }
@@ -56,10 +82,87 @@ training_repo/
 
 #### 字段说明
 
+**Meta字段：**
 - **release_name**: 训练数据集的发布名称
 - **consumer_version**: 对应的Consumer版本，格式：`v{major}.{minor}.{patch}`
-- **bundle_version**: 对应的Bundle版本，格式：`v{version}-{timestamp}`
+- **bundle_versions**: 对应的Bundle版本列表，支持混合版本，格式：`["v{version}-{timestamp}"]`
 - **version**: 当前训练数据集版本，语义化版本格式
+- **training_type**: 训练类型，dagger文件专用，标识为"dagger"
+
+**Dataset字段：**
+- **name**: 数据集唯一名称（IDE生成或手工命名，确保唯一性）
+- **obs_path**: 数据集存储路径（生产前为空，生产后回写）
+- **source_bundle_versions**: 数据集来源的Bundle版本列表，支持混合版本场景
+- **duplicate**: 数据复制倍数
+- **dagger_meta**: DAgger专用元信息（仅dagger文件使用）
+
+#### 使用场景
+
+**混合版本场景：** 数据挖掘时从多个Bundle版本中提取数据，形成新的数据集
+**DAgger训练：** 在线学习需要特殊数据处理，使用独立的dagger文件避免误加载
+**配置生产：** training_dataset.json既作为数据生产的配置输入，也作为生产结果的索引记录
+
+### 3. 配置文件生产流程
+
+training_dataset.json具有**双重用途**：既是生产配置输入，也是生产结果记录。
+
+#### 配置阶段（生产输入）
+```json
+{
+    "meta": {
+        "release_name": "DataMining_Mixed_20250727",
+        "consumer_version": "v1.2.0", 
+        "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+        "version": "v1.2.0",
+        "status": "pending"
+    },
+    "dataset_index": [
+        {
+            "name": "highway_merge_mixed_dataset",
+            "obs_path": "",  // 空路径，等待生产
+            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+            "duplicate": 3,
+            "status": "pending"
+        }
+    ]
+}
+```
+
+#### 生产过程
+1. **解析配置**：生产系统读取配置文件，识别`obs_path`为空的待生产数据集
+2. **混合版本处理**：根据`source_bundle_versions`从多个Bundle中获取数据
+3. **数据挖掘/合并**：调用外部工具进行数据处理（挖掘过程不纳管）
+4. **生成数据**：产出最终的JSONL文件到OBS
+
+#### 生产完成（结果记录）
+```json
+{
+    "meta": {
+        "release_name": "DataMining_Mixed_20250727",
+        "consumer_version": "v1.2.0",
+        "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"], 
+        "version": "v1.2.0",
+        "status": "completed",
+        "produced_at": "2025-07-27 16:30:00"
+    },
+    "dataset_index": [
+        {
+            "name": "highway_merge_mixed_dataset",
+            "obs_path": "obs://training-data/highway_merge_mixed.jsonl",  // 回写路径
+            "source_bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
+            "duplicate": 3,
+            "status": "produced",
+            "produced_at": "2025-07-27 16:30:00"
+        }
+    ]
+}
+```
+
+#### 状态字段说明
+- **pending**: 待生产，obs_path为空
+- **producing**: 生产中（可选状态）
+- **produced**: 已生产完成，obs_path已填写
+- **failed**: 生产失败
 
 ### 2. 提交信息模板（以 Git Commit 追踪变更）
 
@@ -171,12 +274,12 @@ foundational_model/v1.0.0.yaml → foundational_model-v1.0.0-20250620-143500.yam
 
 **说明**：
 - Consumer版本：在DataSpecHub中定义，如 `version: "1.0.0"`
-- Bundle版本：引用Consumer时加v前缀，如 `consumer_version: "v1.0.0"`，Bundle自身版本为 `bundle_version: "v1.0.0-20250620-143500"`
-- Training Dataset版本：基于Bundle进一步数据策划后的版本
+- Bundle版本：引用Consumer时加v前缀，如 `consumer_version: "v1.0.0"`，Bundle自身版本为 `bundle_versions: ["v1.0.0-20250620-143500"]`
+- Training Dataset版本：基于Bundle进一步数据策划后的版本，支持混合多个Bundle版本
 
 ### 追溯链路
 
-通过 `consumer_version` 和 `bundle_version` 可以追溯到DataSpecHub中的具体配置文件，实现完整的数据血缘关系。
+通过 `consumer_version` 和 `bundle_versions` 数组可以追溯到DataSpecHub中的具体配置文件，实现完整的数据血缘关系。混合版本场景下，可追溯到多个Bundle版本的来源。
 
 ## 最佳实践
 
