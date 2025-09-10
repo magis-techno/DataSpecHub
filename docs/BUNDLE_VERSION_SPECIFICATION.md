@@ -1,7 +1,7 @@
 # Bundle版本规范说明文档
 
 ## 概述
-本文档定义了DataSpecHub中Bundle文件的版本管理规范，包括语义化版本控制(SemVer)原则、Bundle类型说明以及版本字段的标准含义。
+本文档定义了DataSpecHub中Bundle文件和Consumer配置的版本管理规范，包括语义化版本控制(SemVer)原则、Bundle类型说明、Consumer版本约束语法以及版本字段的标准含义。
 
 ## 语义化版本控制(SemVer)基础
 
@@ -188,19 +188,25 @@ def select_version(bundle, channel_name, strategy="recommended"):
 requirements:
   - channel: image_original
     version: "1.2.0"           # 精确版本要求
+    required: true
+    on_missing: "fail"
     
   - channel: object_array_fusion_infer  
-    version: ">=1.2.0"         # 范围约束
+    version:                   # 多版本候选
+      - "1.2.0_optimized"      # 首选优化版本
+      - ">=1.2.0"              # 备选范围约束
+    required: true
+    on_missing: "fail"
     
   - channel: utils_slam
     version: "~1.0.0"          # 补丁级兼容
-    on_missing: "substitute"   # 支持替代策略
-    substitute_with:
-      channel: utils_slam
-      version: ">=1.0.0"
+    required: true
+    on_missing: "fail"
       
   - channel: occupancy
     version: ">=1.0.0"         # 范围约束，允许1.0.0+
+    required: false            # 可选数据
+    on_missing: "ignore"
 ```
 
 ### 对应Bundle快照
@@ -218,8 +224,8 @@ channels:
     source_constraint: "1.2.0"
     
   - channel: object_array_fusion_infer  
-    available_versions: ["1.2.0"]                    # 满足>=1.2.0的版本
-    source_constraint: ">=1.2.0"
+    available_versions: ["1.2.0_optimized", "1.2.0"] # 首选优化版本 + 备选版本
+    source_constraint: "['1.2.0_optimized', '>=1.2.0']"
     
   - channel: utils_slam
     available_versions: ["1.0.5", "1.0.2", "1.0.0"] # 满足~1.0.0，按推荐度排序
@@ -234,15 +240,16 @@ channels:
 
 ### 约束类型处理
 
-假设系统中可用版本为：`[2.1.0, 1.5.1, 1.5.0, 1.4.0, 1.3.0, 1.2.8, 1.2.0, 1.1.9]`
+假设系统中可用版本为：`[2.1.0, 1.5.1, 1.5.0, 1.4.0_opt, 1.3.0, 1.2.8, 1.2.0, 1.1.9]`
 
 | Consumer约束 | Bundle解析结果 | 使用场景 |
 |-------------|---------------|----------|
 | `"1.2.0"` | `["1.2.0"]` | 精确版本，严格要求 |
-| `">=1.3.0"` | `["2.1.0", "1.5.1", "1.5.0", "1.4.0", "1.3.0"]` | 最低版本要求，无上限 |
+| `">=1.3.0"` | `["2.1.0", "1.5.1", "1.5.0", "1.4.0_opt", "1.3.0"]` | 最低版本要求，无上限 |
 | `"~1.2.0"` | `["1.2.8", "1.2.0"]` | 保守策略，只允许补丁更新 |
-| `"^1.2.0"` | `["1.5.1", "1.5.0", "1.4.0", "1.3.0", "1.2.8", "1.2.0"]` | 兼容更新，但排除2.x版本 |
-| `"*"` | `["2.1.0", "1.5.1", "1.5.0", "1.4.0", "1.3.0", "1.2.8", "1.2.0", "1.1.9"]` | 任何版本，追求最新 |
+| `"^1.2.0"` | `["1.5.1", "1.5.0", "1.4.0_opt", "1.3.0", "1.2.8", "1.2.0"]` | 兼容更新，但排除2.x版本 |
+| `["1.4.0_opt", ">=1.3.0"]` | `["1.4.0_opt", "2.1.0", "1.5.1", "1.5.0", "1.3.0"]` | 首选特定版本+备选范围 |
+| `"*"` | `["2.1.0", "1.5.1", "1.5.0", "1.4.0_opt", "1.3.0", "1.2.8", "1.2.0", "1.1.9"]` | 任何版本，追求最新 |
 
 ### 关键约束区别
 
@@ -263,8 +270,115 @@ channels:
 | 实验环境 | `">=1.2.0"` | 允许任何新版本，包括破坏性更新 |
 | 特定功能依赖 | `">=1.3.0"` | 需要特定版本的新功能 |
 
-### Substitute策略处理
-当Consumer配置了substitute策略时，Bundle中的`available_versions`包含：
-1. **主要版本**: 满足原始约束的版本
-2. **替代版本**: 满足substitute约束的版本（如果与主要版本不同）
+## Consumer版本管理规范
+
+### Consumer版本结构
+
+#### 目录组织
+```
+consumers/
+├── end_to_end/
+│   ├── v1.0.0.yaml           # 基础版本
+│   ├── v1.2.0.yaml           # 当前稳定版本  
+│   ├── v1.2.1-experiment.yaml    # 实验分支
+│   └── latest.yaml           # 指向当前推荐版本
+├── foundational_model/
+│   ├── v1.0.0.yaml           # 基础版本
+│   ├── v1.0.1-pretraining.yaml   # 预训练特化版本
+│   ├── v1.0.2-finetuning.yaml    # 微调特化版本
+│   └── latest.yaml
+└── pv_trafficlight/
+    ├── v1.1.0.yaml           # 当前版本
+    ├── v1.1.1-weather.yaml      # 天气适应性分支
+    └── latest.yaml
+```
+
+#### 文件命名规范
+- **主版本**: `v{major}.{minor}.{patch}.yaml`
+- **分支版本**: `v{major}.{minor}.{patch}-{variant}.yaml`
+
+#### 变体后缀含义
+| 后缀 | 含义 | 使用场景 |
+|------|------|----------|
+| `-experiment` | 实验性功能测试 | 功能验证、A/B测试 |
+| `-pretraining` | 预训练阶段特化 | 大模型预训练阶段 |
+| `-finetuning` | 微调阶段特化 | 大模型微调阶段 |
+| `-debug` | 调试版本 | 问题诊断、开发调试 |
+
+### Consumer配置文件规范
+
+#### Meta字段
+```yaml
+meta:
+  consumer: end_to_end              # Consumer名称
+  version: "1.2.0"                  # 版本号（遵循SemVer）
+  parent_version: "1.1.0"           # 基于哪个版本创建（可选）
+  branch_type: "stable"             # stable/experiment/optimization/pretraining/finetuning
+  created_at: "2025-04-10"          # 创建时间
+  expires_at: "2025-05-10"          # 实验分支过期时间（可选）
+  owner: "e2e-team@company.com"     # 负责团队
+  description: "端到端网络的数据通道版本需求"
+```
+
+#### Requirements字段
+```yaml
+requirements:
+  - channel: image_original
+    version: "1.2.0"              # 单版本约束
+    required: true                 # 是否必需
+    on_missing: "fail"            # 缺失处理策略
+    
+  - channel: object_array_fusion_infer
+    version:                      # 多版本候选列表（按优先级排序）
+      - "1.2.0_optimized"         # 首选版本（支持非标准命名）
+      - "1.2.0"                   # 备选版本
+      - ">=1.1.0"                 # SemVer备选约束
+    required: true
+    on_missing: "fail"
+      
+  - channel: utils_slam
+    version: "~1.0.0"
+    required: false
+    on_missing: "ignore"          # 忽略缺失
+```
+
+### 版本约束语法
+
+#### 支持的格式
+- **单版本**: `version: "1.2.0"` 或 `version: ">=1.2.0"`
+- **版本列表**: `version: ["1.2.0_opt", "1.2.0", ">=1.1.0"]`
+- **混合约束**: 列表中可以包含精确版本和SemVer约束
+
+#### 处理逻辑
+1. **单版本**: 按标准SemVer约束解析
+2. **版本列表**: 按优先级顺序查找可用版本
+   - 精确版本: 直接匹配
+   - SemVer约束: 解析后合并到结果中
+
+### 数据缺失处理策略
+
+| 策略 | 含义 | 使用场景 |
+|------|------|----------|
+| `fail` | 任务失败中断 | 关键数据，如核心传感器数据 |
+| `ignore` | 忽略缺失继续处理 | 可选的辅助数据 |
+
+### Consumer版本约束在Bundle中的体现
+
+Consumer中的版本约束经过Bundle生成器解析后，转换为具体的版本列表：
+
+```yaml
+# Consumer约束
+requirements:
+  - channel: lidar_data
+    version:
+      - "2.1.0_5cm"              # 首选非标准版本
+      - "2.1.0"                  # 标准备选版本
+      - ">=2.0.0"                # SemVer备选范围
+
+# Bundle解析结果
+channels:
+  - channel: lidar_data
+    available_versions: ["2.1.0_5cm", "2.1.0", "2.0.5"]  # 实际可用版本
+    source_constraint: "['2.1.0_5cm', '2.1.0', '>=2.0.0']"  # 原始约束记录
+```
 

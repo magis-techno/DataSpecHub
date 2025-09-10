@@ -15,28 +15,32 @@ requirements:
   - channel: image_original
     version: "1.2.0"
     required: true
-    on_missing: "fail"  # 任务失败中断
+    on_missing: "fail"
     
   - channel: object_array_fusion_infer
     version: ">=1.2.0"
     required: true
-    on_missing: "fail"  # 任务失败中断
+    on_missing: "fail"
     
   - channel: occupancy
-    version: "1.0.0"
+    version:
+      - "1.0.0"
     required: true
-    on_missing: "substitute"  # 使用替代数据源
-    substitute_with:
-      channel: occupancy
-      version: ">=1.0.0"
+    on_missing: "fail"
     
   - channel: utils_slam
     version: ">=1.0.0"
     required: true
-    on_missing: "substitute"  # 使用替代数据源
-    substitute_with:
-      channel: utils_slam
-      version: ">=1.0.0"
+    on_missing: "fail"
+    
+  - channel: lidar_points       # 新增：包含不规范版本的通道
+    version:
+      - "2.1.0_5cm_optimized"  # 首选：5cm精度优化版本
+      - "2.1.0_5cm"            # 备选：5cm精度标准版本
+      - "2.1.0_10cm"           # 备选：10cm精度版本
+      - ">=2.1.0"              # 最后备选：任何2.1+版本
+    required: false
+    on_missing: "ignore"
 
 
 

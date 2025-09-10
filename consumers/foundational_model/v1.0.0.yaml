@@ -17,10 +17,7 @@ requirements:
   - channel: object_array_fusion_infer
     version: ">=1.0.0"
     required: true
-    on_missing: "substitute"  # 使用替代数据源
-    substitute_with:
-      channel: object_array_fusion_infer
-      version: ">=1.0.0"
+    on_missing: "fail"
     
   - channel: occupancy
     version: "1.0.0"

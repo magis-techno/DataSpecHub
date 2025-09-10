@@ -24,19 +24,13 @@ requirements:
     
   - channel: occupancy
     version: "1.0.0"
-    required: true  # 微调阶段需要完整数据
-    on_missing: "substitute"  # 使用替代数据源
-    substitute_with:
-      channel: occupancy
-      version: ">=1.0.0"
+    required: true
+    on_missing: "fail"
     
   - channel: utils_slam
     version: ">=1.0.0"
     required: true
-    on_missing: "substitute"  # 使用替代数据源
-    substitute_with:
-      channel: utils_slam
-      version: ">=1.0.0"
+    on_missing: "fail"
 
 # 需求变更历史
 change_history:

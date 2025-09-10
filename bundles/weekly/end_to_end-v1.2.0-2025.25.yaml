@@ -24,8 +24,12 @@ channels:
     
   - channel: occupancy
     available_versions: ["1.0.0"]
-    source_constraint: "1.0.0"
+    source_constraint: "['1.0.0']"
     
   - channel: utils_slam
     available_versions: ["1.1.0", "1.0.0"]
-    source_constraint: ">=1.0.0" 
+    source_constraint: ">=1.0.0"
+    
+  - channel: lidar_points
+    available_versions: ["2.1.0_5cm_optimized", "2.1.0_5cm", "2.1.0"]
+    source_constraint: "['2.1.0_5cm_optimized', '2.1.0_5cm', '2.1.0_10cm', '>=2.1.0']" 
