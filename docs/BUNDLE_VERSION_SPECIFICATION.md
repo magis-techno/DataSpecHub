@@ -355,12 +355,62 @@ requirements:
    - 精确版本: 直接匹配
    - SemVer约束: 解析后合并到结果中
 
-### 数据缺失处理策略
+### 运行时配置字段
 
-| 策略 | 含义 | 使用场景 |
-|------|------|----------|
-| `fail` | 任务失败中断 | 关键数据，如核心传感器数据 |
-| `ignore` | 忽略缺失继续处理 | 可选的辅助数据 |
+#### `required`: 是否必需（true/false）
+- `true`: 核心数据，业务流程必需
+- `false`: 可选数据，缺失时可继续
+
+#### `on_missing`: 缺失处理策略
+- `"fail"`: 任务失败中断
+- `"ignore"`: 忽略缺失继续处理
+
+#### 推荐配置
+
+**核心数据**：
+```yaml
+- channel: image_original
+  required: true
+  on_missing: "fail"
+```
+
+**可选数据**：
+```yaml
+- channel: occupancy
+  required: false
+  on_missing: "ignore"
+```
+
+**特殊用法**：
+```yaml
+- channel: debug_info
+  required: false
+  on_missing: "fail"    # 非核心但需要完整性验证
+```
+
+### Bundle中的运行时配置
+
+Bundle文件包含完整的运行时配置信息，使数据获取系统能够正确处理数据缺失情况：
+
+```yaml
+channels:
+  - channel: image_original
+    available_versions: ["1.2.0", "1.1.0", "1.0.0"]
+    source_constraint: ">=1.0.0"
+    required: true          # 从Consumer配置继承
+    on_missing: "fail"      # 从Consumer配置继承
+    
+  - channel: occupancy
+    available_versions: ["1.0.0"]
+    source_constraint: "1.0.0"
+    required: false         # 从Consumer配置继承
+    on_missing: "ignore"    # 从Consumer配置继承
+```
+
+这样设计的优势：
+- **自包含**：Bundle包含运行时所需的所有信息
+- **一致性**：确保版本选择与运行时行为保持一致
+- **简化部署**：无需回溯到Consumer配置文件
 
 ### Consumer版本约束在Bundle中的体现
 
@@ -380,5 +430,7 @@ channels:
   - channel: lidar_data
     available_versions: ["2.1.0_5cm", "2.1.0", "2.0.5"]  # 实际可用版本
     source_constraint: "['2.1.0_5cm', '2.1.0', '>=2.0.0']"  # 原始约束记录
+    required: true                                        # 是否必需
+    on_missing: "fail"                                    # 缺失处理策略
 ```
 

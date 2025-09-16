@@ -176,9 +176,27 @@ class DatabaseBundleGenerator:
             }
         }
         
+        # 获取原始requirements
+        requirements = []
+        if 'requirement_groups' in consumer_config:
+            for group_name, group_config in consumer_config['requirement_groups'].items():
+                if 'requirements' in group_config:
+                    requirements.extend(group_config['requirements'])
+        elif 'requirements' in consumer_config:
+            requirements = consumer_config['requirements']
+        
         # 添加每个通道的详细信息
         for channel, version in resolved_versions.items():
             channel_availability = availability_report['channels'].get(channel, {})
+            
+            # 查找原始requirement配置
+            channel_required = True  # 默认值
+            channel_on_missing = "fail"  # 默认值
+            for req in requirements:
+                if req['channel'] == channel:
+                    channel_required = req.get('required', True)
+                    channel_on_missing = req.get('on_missing', 'fail')
+                    break
             
             bundle_config['resolved_channels'][channel] = {
                 'version': version,
@@ -186,7 +204,9 @@ class DatabaseBundleGenerator:
                 'data_path': channel_availability.get('data_path', ''),
                 'size_gb': channel_availability.get('size_gb', 0),
                 'sample_count': channel_availability.get('sample_count', 0),
-                'quality_score': channel_availability.get('quality_score', 0.0)
+                'quality_score': channel_availability.get('quality_score', 0.0),
+                'required': channel_required,
+                'on_missing': channel_on_missing
             }
         
         return bundle_config

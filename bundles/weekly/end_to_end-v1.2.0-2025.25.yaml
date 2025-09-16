@@ -17,19 +17,29 @@ channels:
   - channel: image_original
     available_versions: ["1.2.0"]
     source_constraint: "1.2.0"
+    required: true
+    on_missing: "fail"
     
   - channel: object_array_fusion_infer  
     available_versions: ["1.2.0"]
     source_constraint: ">=1.2.0"
+    required: true
+    on_missing: "fail"
     
   - channel: occupancy
     available_versions: ["1.0.0"]
     source_constraint: "['1.0.0']"
+    required: true
+    on_missing: "fail"
     
   - channel: utils_slam
     available_versions: ["1.1.0", "1.0.0"]
     source_constraint: ">=1.0.0"
+    required: true
+    on_missing: "fail"
     
   - channel: lidar_points
     available_versions: ["2.1.0_5cm_optimized", "2.1.0_5cm", "2.1.0"]
-    source_constraint: "['2.1.0_5cm_optimized', '2.1.0_5cm', '2.1.0_10cm', '>=2.1.0']" 
+    source_constraint: "['2.1.0_5cm_optimized', '2.1.0_5cm', '2.1.0_10cm', '>=2.1.0']"
+    required: false
+    on_missing: "ignore" 

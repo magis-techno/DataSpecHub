@@ -17,15 +17,23 @@ channels:
   - channel: image_original
     available_versions: ["1.2.0", "1.1.0", "1.0.0"]
     source_constraint: ">=1.0.0"
+    required: true
+    on_missing: "fail"
     
   - channel: object_array_fusion_infer  
     available_versions: ["1.2.0", "1.1.0", "1.0.0"]
     source_constraint: ">=1.0.0"
+    required: true
+    on_missing: "fail"
     
   - channel: occupancy
     available_versions: ["1.0.0"]
     source_constraint: "1.0.0"
+    required: false
+    on_missing: "ignore"
     
   - channel: utils_slam
     available_versions: ["1.1.0", "1.0.0"]
-    source_constraint: ">=1.0.0" 
+    source_constraint: ">=1.0.0"
+    required: false
+    on_missing: "ignore" 

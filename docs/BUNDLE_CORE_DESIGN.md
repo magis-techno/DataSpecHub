@@ -30,8 +30,9 @@ meta:
 channels:
   - channel: image_original
     available_versions: ["1.2.0"]           # 版本列表
-    recommended_version: "1.2.0"            # 推荐版本
     source_constraint: "1.2.0"              # 原始约束
+    required: true                           # 是否必需
+    on_missing: "fail"                       # 缺失处理策略
 ```
 
 **用途**：生产环境、定期发布、团队协作的标准版本
@@ -110,8 +111,9 @@ conversion_source:
 channels:
   - channel: channel_name
     available_versions: ["1.2.0", "1.1.0", "1.0.0"]  # 版本列表
-    recommended_version: "1.2.0"                      # 推荐版本
     source_constraint: ">=1.0.0"                      # 原始约束
+    required: true                                     # 是否必需
+    on_missing: "fail"                                 # 缺失处理策略
 
 
 # === 完整性验证 ===

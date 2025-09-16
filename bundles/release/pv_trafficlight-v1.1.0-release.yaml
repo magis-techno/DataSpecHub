@@ -17,7 +17,11 @@ channels:
   - channel: image_original
     available_versions: ["1.2.0"]
     source_constraint: "1.2.0"
+    required: true
+    on_missing: "fail"
     
   - channel: occupancy
     available_versions: ["1.0.0"]
-    source_constraint: "1.0.0" 
+    source_constraint: "1.0.0"
+    required: false
+    on_missing: "ignore" 

@@ -201,8 +201,8 @@ class BundleManager:
                 if req['channel'] == channel:
                     if 'required' in req:
                         channel_config['required'] = req['required']
-                    if 'priority' in req:
-                        channel_config['priority'] = req['priority']
+                    if 'on_missing' in req:
+                        channel_config['on_missing'] = req['on_missing']
                     break
                     
             bundle_config['channels'].append(channel_config)
