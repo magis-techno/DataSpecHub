@@ -116,8 +116,7 @@ training_dataset.json具有**双重用途**：既是生产配置输入，也是�
             "name": "highway_merge_mixed_dataset",
             "obs_path": "",  // 空路径，等待生产
             "bundle_versions": ["v1.1.0-20250618"],
-            "duplicate": 3,
-            "status": "pending"
+            "duplicate": 3
         }
     ]
 }
@@ -129,35 +128,6 @@ training_dataset.json具有**双重用途**：既是生产配置输入，也是�
 3. **数据挖掘/合并**：调用外部工具进行数据处理（挖掘过程不纳管）
 4. **生成数据**：产出最终的JSONL文件到OBS
 
-#### 生产完成（结果记录）
-```json
-{
-    "meta": {
-        "release_name": "DataMining_Mixed_20250727",
-        "consumer_version": "v1.2.0",
-        "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"], 
-        "version": "v1.2.0",
-        "status": "completed",
-        "produced_at": "2025-07-27 16:30:00"
-    },
-    "dataset_index": [
-        {
-            "name": "highway_merge_mixed_dataset",
-            "obs_path": "obs://training-data/highway_merge_mixed.jsonl",  // 回写路径
-            "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
-            "duplicate": 3,
-            "status": "produced",
-            "produced_at": "2025-07-27 16:30:00"
-        }
-    ]
-}
-```
-
-#### 状态字段说明
-- **pending**: 待生产，obs_path为空
-- **producing**: 生产中（可选状态）
-- **produced**: 已生产完成，obs_path已填写
-- **failed**: 生产失败
 
 ### 2. 提交信息模板（以 Git Commit 追踪变更）
 
@@ -275,60 +245,3 @@ foundational_model/v1.0.0.yaml → foundational_model-v1.0.0-20250620-143500.yam
 ### 追溯链路
 
 通过 `consumer_version` 和 `bundle_versions` 数组可以追溯到DataSpecHub中的具体配置文件，实现完整的数据血缘关系。混合版本场景下，可追溯到多个Bundle版本的来源。
-
-## 最佳实践
-
-### 1. 操作记录
-
-- 每次操作以结构化 Commit Message 记录
-- 删除操作建议保存具体的删除列表
-- 操作描述要清晰明确
-
-### 2. 版本追溯
-
-- 保持与上游Bundle版本的对应关系
-- 重要操作节点创建snapshot备份
-
-### 3. 数据质量
-
-- 新增数据要进行格式和质量验证
-- 清洗操作要有明确的评判标准
-- 保持操作的可重现性
-
-### 4. 协作管理
-
-- 操作前要明确责任人
-- 重要操作要进行review
-- 数据集级操作建议结合Git管理
-
-
-
-## 工具支持
-
-### 推荐工具
-
-- **YAML编辑**: `yq` 命令行工具
-- **文件对比**: `diff` 或 `vimdiff`
-- **版本管理**: `git` (可选，对整个training_repo进行版本控制)
-
-### 自动化脚本
-
-可以开发简单的脚本来：
-- 自动生成operation ID
-- 校验提交模板与字段完整性
-- 自动创建snapshot
-- 生成统计报告
-
-## 常见问题
-
-### Q: 删除的clips文件会很大吗？
-A: 是的，但这是必要的。可以考虑压缩存储或定期归档。
-
-### Q: 如何处理并发操作？
-A: 建议串行操作，避免同时修改同一个数据集。
-
-### Q: 大数据集清洗和普通数据集清洗有什么区别？
-A: 大数据集清洗通常涉及更多 clips，建议使用结构化 Commit Message，并按需在提交正文中纳入简要统计（如移除数量、规则说明）。
-
-### Q: 如何仅依靠 Git 完成追溯？
-A: 通过结构化 Commit Message + Tag/Release 固化交付点；必要时在提交中包含摘要明细。
