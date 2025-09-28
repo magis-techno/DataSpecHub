@@ -1,0 +1,133 @@
+name: Data Validation and CI
+
+on:
+  push:
+    branches: 
+      - main
+      - develop
+      - 'feature_dataset/**'
+      - 'experiment/**'
+      - 'release/**'
+      - 'hotfix/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  validate-data-format:
+    runs-on: ubuntu-latest
+    name: Validate Dataset JSON Format
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install jsonschema pyyaml
+    
+    - name: Validate training_dataset.json format
+      run: |
+        python .github/scripts/validate_dataset_format.py
+    
+    - name: Check file structure
+      run: |
+        python .github/scripts/check_file_structure.py
+
+  validate-commit-message:
+    runs-on: ubuntu-latest
+    name: Validate Commit Message Format
+    if: github.event_name == 'push'
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 2
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install pyyaml
+    
+    - name: Validate commit message
+      run: |
+        python .github/scripts/validate_commit_message.py
+
+  validate-version-consistency:
+    runs-on: ubuntu-latest
+    name: Validate Version Consistency
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        pip install pyyaml
+    
+    - name: Check version consistency
+      run: |
+        python .github/scripts/validate_version_consistency.py
+
+  check-obs-paths:
+    runs-on: ubuntu-latest
+    name: Check OBS Paths (Optional)
+    if: contains(github.event.head_commit.message, 'obs_path')
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: '3.9'
+    
+    - name: Validate OBS paths format
+      run: |
+        python .github/scripts/validate_obs_paths.py
+
+  branch-policy-check:
+    runs-on: ubuntu-latest
+    name: Branch Policy Check
+    if: github.event_name == 'pull_request'
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check branch naming convention
+      run: |
+        echo "Checking branch naming convention for: ${{ github.head_ref }}"
+        python .github/scripts/check_branch_naming.py "${{ github.head_ref }}"
+    
+    - name: Check PR target branch
+      run: |
+        echo "Checking PR target: ${{ github.base_ref }}"
+        python .github/scripts/check_pr_target.py "${{ github.head_ref }}" "${{ github.base_ref }}"
+
+  auto-cleanup:
+    runs-on: ubuntu-latest
+    name: Auto Branch Cleanup
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
+        token: ${{ secrets.GITHUB_TOKEN }}
+    
+    - name: Clean up merged branches
+      run: |
+        python .github/scripts/auto_cleanup_branches.py

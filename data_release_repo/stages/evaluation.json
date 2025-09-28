@@ -1,0 +1,263 @@
+{
+    "meta": {
+        "stage": "evaluation",
+        "release_name": "Evaluation_Comprehensive_20250923",
+        "consumer_version": "v1.2.0",
+        "bundle_versions": ["v1.2.0-20250620-143500"],
+        "created_at": "2025-09-23 10:30:00",
+        "description": "评估阶段综合测试数据集 - 全面评估模型在各种场景下的性能",
+        "version": "v1.2.0",
+        "stage_config": {
+            "training_mode": "evaluation",
+            "data_strategy": {
+                "sampling_method": "stratified",
+                "data_ratio": {
+                    "highway": 0.25,
+                    "urban": 0.25,
+                    "toll_station": 0.20,
+                    "intersection": 0.15,
+                    "parking": 0.10,
+                    "edge_cases": 0.05
+                },
+                "max_clips_per_dataset": 10000,
+                "min_clips_per_dataset": 100,
+                "shuffle": false,
+                "seed": 42,
+                "balanced_sampling": true
+            },
+            "data_processing": {
+                "augmentation": {
+                    "enabled": false,
+                    "reason": "评估需要原始数据保持一致性"
+                },
+                "normalization": {
+                    "enabled": true,
+                    "method": "standard",
+                    "per_channel": true
+                },
+                "filtering": {
+                    "quality_threshold": 0.95,
+                    "remove_duplicates": true,
+                    "min_duration": 2.0,
+                    "max_duration": 25.0
+                }
+            },
+            "loading_config": {
+                "batch_size": 8,
+                "num_workers": 2,
+                "prefetch_factor": 1,
+                "pin_memory": true,
+                "drop_last": false
+            },
+            "evaluation_config": {
+                "metrics": ["accuracy", "precision", "recall", "f1_score", "auc"],
+                "confidence_thresholds": [0.5, 0.7, 0.9],
+                "scenario_breakdown": true,
+                "confusion_matrix": true,
+                "save_predictions": true
+            }
+        }
+    },
+    "dataset_index": [
+        {
+            "name": "highway_evaluation_standard",
+            "obs_path": "obs://evaluation-data/highway_evaluation_standard.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.25,
+            "sampling_priority": "standard",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "highway",
+                "test_type": "standard",
+                "difficulty_levels": ["easy", "medium", "hard"],
+                "weather_conditions": ["clear", "rain", "fog"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 2500,
+                "ground_truth_quality": "high"
+            }
+        },
+        {
+            "name": "urban_evaluation_comprehensive",
+            "obs_path": "obs://evaluation-data/urban_evaluation_comprehensive.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.25,
+            "sampling_priority": "standard",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "urban",
+                "test_type": "comprehensive",
+                "difficulty_levels": ["medium", "hard"],
+                "weather_conditions": ["clear", "rain"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 2500,
+                "ground_truth_quality": "high"
+            }
+        },
+        {
+            "name": "toll_station_evaluation_focused",
+            "obs_path": "obs://evaluation-data/toll_station_evaluation_focused.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.20,
+            "sampling_priority": "high",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "toll_station",
+                "test_type": "focused",
+                "difficulty_levels": ["medium", "hard", "expert"],
+                "weather_conditions": ["clear", "rain", "fog"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 2000,
+                "ground_truth_quality": "expert",
+                "special_focus": "payment_processing"
+            }
+        },
+        {
+            "name": "intersection_evaluation_complex",
+            "obs_path": "obs://evaluation-data/intersection_evaluation_complex.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.15,
+            "sampling_priority": "high",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "intersection",
+                "test_type": "complex",
+                "difficulty_levels": ["hard", "expert"],
+                "weather_conditions": ["rain", "fog"],
+                "time_of_day": ["dawn", "dusk", "night"],
+                "estimated_clips": 1500,
+                "ground_truth_quality": "expert",
+                "special_focus": "multi_agent_interaction"
+            }
+        },
+        {
+            "name": "parking_evaluation_standard",
+            "obs_path": "obs://evaluation-data/parking_evaluation_standard.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.10,
+            "sampling_priority": "medium",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "parking",
+                "test_type": "standard",
+                "difficulty_levels": ["easy", "medium"],
+                "weather_conditions": ["clear"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 1000,
+                "ground_truth_quality": "high"
+            }
+        },
+        {
+            "name": "edge_cases_critical",
+            "obs_path": "obs://evaluation-data/edge_cases_critical.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 1,
+            "stage_weight": 0.05,
+            "sampling_priority": "critical",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "edge_cases",
+                "test_type": "critical",
+                "difficulty_levels": ["expert"],
+                "weather_conditions": ["extreme"],
+                "time_of_day": ["various"],
+                "estimated_clips": 500,
+                "ground_truth_quality": "expert",
+                "special_focus": "failure_cases"
+            }
+        }
+    ],
+    "benchmark_datasets": {
+        "enabled": true,
+        "datasets": [
+            {
+                "name": "industry_standard_benchmark",
+                "obs_path": "obs://benchmark-data/industry_standard_v1.2.jsonl",
+                "description": "行业标准基准测试集",
+                "clips_count": 5000
+            },
+            {
+                "name": "academic_benchmark_suite",
+                "obs_path": "obs://benchmark-data/academic_suite_v2.1.jsonl", 
+                "description": "学术界标准测试套件",
+                "clips_count": 3000
+            }
+        ]
+    },
+    "stage_metrics": {
+        "target_metrics": {
+            "overall_accuracy": {
+                "target": 0.90,
+                "tolerance": 0.02
+            },
+            "precision": {
+                "target": 0.88,
+                "tolerance": 0.03
+            },
+            "recall": {
+                "target": 0.87,
+                "tolerance": 0.03
+            },
+            "f1_score": {
+                "target": 0.87,
+                "tolerance": 0.03
+            }
+        },
+        "scenario_specific_targets": {
+            "highway": {
+                "accuracy": 0.92,
+                "weight": 0.25
+            },
+            "urban": {
+                "accuracy": 0.89,
+                "weight": 0.25
+            },
+            "toll_station": {
+                "accuracy": 0.88,
+                "weight": 0.20
+            },
+            "intersection": {
+                "accuracy": 0.85,
+                "weight": 0.15
+            },
+            "parking": {
+                "accuracy": 0.93,
+                "weight": 0.10
+            },
+            "edge_cases": {
+                "accuracy": 0.70,
+                "weight": 0.05
+            }
+        },
+        "performance_requirements": {
+            "inference_time": {
+                "max_ms": 100,
+                "percentile_95": 80
+            },
+            "memory_usage": {
+                "max_mb": 2048,
+                "average_mb": 1024
+            }
+        }
+    },
+    "evaluation_protocol": {
+        "test_runs": 3,
+        "confidence_interval": 0.95,
+        "cross_validation": {
+            "enabled": false,
+            "reason": "使用固定测试集确保可重现性"
+        },
+        "output_formats": ["json", "csv", "html_report"],
+        "detailed_analysis": {
+            "enabled": true,
+            "failure_case_analysis": true,
+            "performance_profiling": true,
+            "statistical_significance": true
+        }
+    }
+}
+

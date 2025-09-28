@@ -1,0 +1,84 @@
+# 当前激活阶段状态
+# 此文件由系统自动维护，请勿手动编辑
+
+# 当前激活的阶段
+current_stage: "pretraining"
+current_variant: null  # A/B测试时使用
+activated_at: "2025-09-23 10:30:00"
+activated_by: "system"  # system | user | scheduler
+switch_reason: "training_start"
+config_file: "stages/pretraining.json"
+
+# 运行时状态
+runtime_status:
+  is_active: true
+  last_check: "2025-09-23 10:30:00"
+  next_check: "2025-09-23 10:35:00"
+  check_interval: 300  # 秒
+  
+# 当前训练指标
+current_metrics:
+  epoch: 0
+  loss: null
+  accuracy: null
+  learning_rate: 0.001
+  gpu_memory_usage: 0.0
+  data_loading_time: 0.0
+  last_updated: "2025-09-23 10:30:00"
+
+# 历史记录
+history:
+  - stage: "pretraining"
+    variant: null
+    activated_at: "2025-09-23 10:30:00"
+    deactivated_at: null
+    duration: null
+    reason: "training_start"
+    triggered_by: "system"
+    final_metrics:
+      epoch: null
+      loss: null
+      accuracy: null
+
+# 下一阶段预测
+next_stage:
+  predicted_stage: "finetuning"
+  estimated_switch_time: "2025-09-25 14:00:00"
+  confidence: 0.85
+  conditions:
+    - condition: "epoch >= 50"
+      status: "pending"
+      current_value: 0
+      target_value: 50
+    - condition: "loss < 0.1"
+      status: "pending"
+      current_value: null
+      target_value: 0.1
+
+# 异常和警告
+alerts:
+  active_alerts: []
+  alert_history:
+    - timestamp: "2025-09-23 10:30:00"
+      level: "INFO"
+      message: "阶段切换到 pretraining"
+      resolved: true
+      resolved_at: "2025-09-23 10:30:00"
+
+# 系统信息
+system_info:
+  hostname: "training-server-01"
+  pid: null
+  python_version: "3.9.0"
+  gpu_info: []
+  disk_usage: {}
+  memory_usage: {}
+  last_updated: "2025-09-23 10:30:00"
+
+# 配置版本信息
+config_version:
+  stage_config_hash: null
+  stage_config_last_modified: "2025-09-23 10:30:00"
+  active_config_hash: null
+  active_config_last_modified: "2025-09-23 10:30:00"
+

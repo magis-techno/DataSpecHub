@@ -1,0 +1,176 @@
+{
+    "meta": {
+        "stage": "pretraining",
+        "release_name": "Pretraining_Foundation_20250923",
+        "consumer_version": "v1.2.0",
+        "bundle_versions": ["v1.2.0-20250620-143500"],
+        "created_at": "2025-09-23 10:30:00",
+        "description": "预训练阶段基础数据集 - 大规模多场景数据用于建立模型基础能力",
+        "version": "v1.2.0",
+        "stage_config": {
+            "training_mode": "pretraining",
+            "data_strategy": {
+                "sampling_method": "balanced",
+                "data_ratio": {
+                    "highway": 0.35,
+                    "urban": 0.30,
+                    "parking": 0.20,
+                    "intersection": 0.10,
+                    "others": 0.05
+                },
+                "max_clips_per_dataset": 100000,
+                "min_clips_per_dataset": 1000,
+                "shuffle": true,
+                "seed": 42
+            },
+            "data_processing": {
+                "augmentation": {
+                    "enabled": true,
+                    "methods": ["rotation", "brightness", "noise", "flip"],
+                    "probability": 0.5
+                },
+                "normalization": {
+                    "enabled": true,
+                    "method": "standard",
+                    "per_channel": true
+                },
+                "filtering": {
+                    "quality_threshold": 0.7,
+                    "remove_duplicates": true,
+                    "min_duration": 2.0,
+                    "max_duration": 30.0
+                }
+            },
+            "loading_config": {
+                "batch_size": 32,
+                "num_workers": 8,
+                "prefetch_factor": 4,
+                "pin_memory": true,
+                "drop_last": true
+            }
+        }
+    },
+    "dataset_index": [
+        {
+            "name": "highway_foundation_large",
+            "obs_path": "obs://pretraining-data/highway_foundation_large.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 10,
+            "stage_weight": 0.35,
+            "sampling_priority": "high",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "highway",
+                "difficulty_level": "mixed",
+                "weather_conditions": ["clear", "rain", "fog"],
+                "time_of_day": ["day", "night", "dawn", "dusk"],
+                "estimated_clips": 87500
+            }
+        },
+        {
+            "name": "urban_scenarios_comprehensive",
+            "obs_path": "obs://pretraining-data/urban_scenarios_comprehensive.jsonl", 
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 8,
+            "stage_weight": 0.30,
+            "sampling_priority": "high",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "urban",
+                "difficulty_level": "mixed",
+                "weather_conditions": ["clear", "rain"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 75000
+            }
+        },
+        {
+            "name": "parking_scenarios_base",
+            "obs_path": "obs://pretraining-data/parking_scenarios_base.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 6,
+            "stage_weight": 0.20,
+            "sampling_priority": "medium",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "parking",
+                "difficulty_level": "easy_to_medium",
+                "weather_conditions": ["clear"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 50000
+            }
+        },
+        {
+            "name": "intersection_basic_cases",
+            "obs_path": "obs://pretraining-data/intersection_basic_cases.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 4,
+            "stage_weight": 0.10,
+            "sampling_priority": "medium",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "intersection",
+                "difficulty_level": "easy",
+                "weather_conditions": ["clear"],
+                "time_of_day": ["day"],
+                "estimated_clips": 25000
+            }
+        },
+        {
+            "name": "misc_scenarios_foundation",
+            "obs_path": "obs://pretraining-data/misc_scenarios_foundation.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 2,
+            "stage_weight": 0.05,
+            "sampling_priority": "low",
+            "enabled": true,
+            "metadata": {
+                "scenario_type": "others",
+                "difficulty_level": "mixed",
+                "weather_conditions": ["clear", "rain"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 12500
+            }
+        }
+    ],
+    "validation_dataset": {
+        "enabled": true,
+        "split_ratio": 0.1,
+        "datasets": [
+            {
+                "name": "highway_validation_set",
+                "obs_path": "obs://validation-data/highway_validation_set.jsonl",
+                "clips_count": 5000
+            },
+            {
+                "name": "urban_validation_set", 
+                "obs_path": "obs://validation-data/urban_validation_set.jsonl",
+                "clips_count": 3000
+            }
+        ]
+    },
+    "stage_metrics": {
+        "target_metrics": {
+            "loss": {
+                "target": 0.1,
+                "tolerance": 0.02
+            },
+            "accuracy": {
+                "target": 0.85,
+                "tolerance": 0.05
+            }
+        },
+        "early_stopping": {
+            "enabled": true,
+            "patience": 10,
+            "min_delta": 0.001,
+            "monitor": "val_loss"
+        },
+        "checkpointing": {
+            "enabled": true,
+            "save_frequency": 5,
+            "keep_best": true,
+            "metric": "val_accuracy"
+        }
+    }
+}
+

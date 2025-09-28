@@ -1,0 +1,215 @@
+{
+    "meta": {
+        "stage": "finetuning",
+        "release_name": "Finetuning_Specialized_20250923",
+        "consumer_version": "v1.2.0", 
+        "bundle_versions": ["v1.2.0-20250620-143500"],
+        "created_at": "2025-09-23 10:30:00",
+        "description": "微调阶段特化数据集 - 针对特定场景进行精细化训练",
+        "version": "v1.2.0",
+        "stage_config": {
+            "training_mode": "finetuning",
+            "data_strategy": {
+                "sampling_method": "targeted",
+                "data_ratio": {
+                    "toll_station": 0.50,
+                    "intersection_complex": 0.25,
+                    "merge_lane": 0.15,
+                    "roundabout": 0.10
+                },
+                "max_clips_per_dataset": 50000,
+                "min_clips_per_dataset": 500,
+                "shuffle": false,
+                "seed": 42,
+                "difficulty_progression": true
+            },
+            "data_processing": {
+                "augmentation": {
+                    "enabled": false,
+                    "reason": "保持数据原始性以进行精确微调"
+                },
+                "normalization": {
+                    "enabled": true,
+                    "method": "standard",
+                    "per_channel": true
+                },
+                "filtering": {
+                    "quality_threshold": 0.9,
+                    "remove_duplicates": true,
+                    "min_duration": 3.0,
+                    "max_duration": 20.0,
+                    "complexity_filter": "high"
+                }
+            },
+            "loading_config": {
+                "batch_size": 16,
+                "num_workers": 4,
+                "prefetch_factor": 2,
+                "pin_memory": true,
+                "drop_last": false
+            },
+            "curriculum_learning": {
+                "enabled": true,
+                "strategy": "difficulty_based",
+                "progression_epochs": [0, 15, 30, 45],
+                "difficulty_levels": ["easy", "medium", "hard", "expert"]
+            }
+        }
+    },
+    "dataset_index": [
+        {
+            "name": "toll_station_scenarios_refined",
+            "obs_path": "obs://finetuning-data/toll_station_scenarios_refined.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 5,
+            "stage_weight": 0.50,
+            "sampling_priority": "critical",
+            "enabled": true,
+            "difficulty_level": "progressive",
+            "metadata": {
+                "scenario_type": "toll_station",
+                "difficulty_levels": ["medium", "hard", "expert"],
+                "weather_conditions": ["clear", "rain", "fog"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 25000,
+                "special_cases": ["queue_management", "payment_failures", "emergency_vehicles"]
+            }
+        },
+        {
+            "name": "intersection_complex_cases",
+            "obs_path": "obs://finetuning-data/intersection_complex_cases.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"], 
+            "duplicate": 3,
+            "stage_weight": 0.25,
+            "sampling_priority": "high",
+            "enabled": true,
+            "difficulty_level": "advanced",
+            "metadata": {
+                "scenario_type": "intersection",
+                "difficulty_levels": ["hard", "expert"],
+                "weather_conditions": ["rain", "fog", "snow"],
+                "time_of_day": ["dawn", "dusk", "night"],
+                "estimated_clips": 12500,
+                "special_cases": ["multi_lane_turns", "pedestrian_crossings", "traffic_light_failures"]
+            }
+        },
+        {
+            "name": "merge_lane_challenging",
+            "obs_path": "obs://finetuning-data/merge_lane_challenging.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 2,
+            "stage_weight": 0.15,
+            "sampling_priority": "high",
+            "enabled": true,
+            "difficulty_level": "advanced",
+            "metadata": {
+                "scenario_type": "merge_lane",
+                "difficulty_levels": ["medium", "hard"],
+                "weather_conditions": ["clear", "rain"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 7500,
+                "special_cases": ["high_traffic", "construction_zones", "emergency_merging"]
+            }
+        },
+        {
+            "name": "roundabout_expert_scenarios",
+            "obs_path": "obs://finetuning-data/roundabout_expert_scenarios.jsonl",
+            "bundle_versions": ["v1.2.0-20250620-143500"],
+            "duplicate": 2,
+            "stage_weight": 0.10,
+            "sampling_priority": "medium",
+            "enabled": true,
+            "difficulty_level": "expert",
+            "metadata": {
+                "scenario_type": "roundabout",
+                "difficulty_levels": ["hard", "expert"],
+                "weather_conditions": ["clear", "rain"],
+                "time_of_day": ["day", "night"],
+                "estimated_clips": 5000,
+                "special_cases": ["multi_lane_roundabout", "pedestrian_yield", "cyclist_interaction"]
+            }
+        }
+    ],
+    "validation_dataset": {
+        "enabled": true,
+        "split_ratio": 0.15,
+        "stratified": true,
+        "datasets": [
+            {
+                "name": "toll_station_validation",
+                "obs_path": "obs://validation-data/toll_station_validation.jsonl",
+                "clips_count": 2000
+            },
+            {
+                "name": "intersection_validation",
+                "obs_path": "obs://validation-data/intersection_validation.jsonl", 
+                "clips_count": 1500
+            },
+            {
+                "name": "merge_lane_validation",
+                "obs_path": "obs://validation-data/merge_lane_validation.jsonl",
+                "clips_count": 1000
+            }
+        ]
+    },
+    "stage_metrics": {
+        "target_metrics": {
+            "loss": {
+                "target": 0.05,
+                "tolerance": 0.01
+            },
+            "accuracy": {
+                "target": 0.92,
+                "tolerance": 0.02
+            },
+            "precision": {
+                "target": 0.90,
+                "tolerance": 0.03
+            },
+            "recall": {
+                "target": 0.88,
+                "tolerance": 0.03
+            }
+        },
+        "early_stopping": {
+            "enabled": true,
+            "patience": 15,
+            "min_delta": 0.0005,
+            "monitor": "val_f1_score"
+        },
+        "checkpointing": {
+            "enabled": true,
+            "save_frequency": 3,
+            "keep_best": true,
+            "metric": "val_f1_score"
+        },
+        "scenario_specific_metrics": {
+            "toll_station": {
+                "target_accuracy": 0.95,
+                "weight": 0.5
+            },
+            "intersection": {
+                "target_accuracy": 0.90,
+                "weight": 0.25
+            },
+            "merge_lane": {
+                "target_accuracy": 0.88,
+                "weight": 0.15
+            },
+            "roundabout": {
+                "target_accuracy": 0.85,
+                "weight": 0.10
+            }
+        }
+    },
+    "transfer_learning": {
+        "enabled": true,
+        "pretrained_checkpoint": "checkpoints/pretraining_best.pth",
+        "freeze_layers": ["backbone.layer1", "backbone.layer2"],
+        "learning_rate_schedule": {
+            "backbone": 0.0001,
+            "head": 0.001
+        }
+    }
+}
+
