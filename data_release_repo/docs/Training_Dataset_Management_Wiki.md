@@ -21,6 +21,21 @@ training_repo/
 └── training_dataset.dagger.json    # DAgger训练专用数据集索引（特殊处理，避免误加载）
 ```
 
+## 多任务训练支持
+
+本仓库支持多任务训练场景（如GOD检测+可行驶域分割），通过在数据集配置中添加 **任务标签（task_tags）** 实现：
+
+- 在数据集中标记适用的任务类型，训练时可按需过滤
+- 同一数据集可服务多个任务，通过 `task_tags` 声明支持的任务
+- 不同任务类型可维护独立的分支进行管理（可选）
+
+**支持的任务类型**：
+- `multi_task`: 多任务联合训练（GOD+可行驶域）
+- `god_base`: GOD基础训练（20cm分辨率）
+- `god_hd`: GOD高清训练（5cm分辨率）
+- `drivable_2cls`: 可行驶域2分类
+- `drivable_multi`: 可行驶域多分类（园区场景）
+
 ## 文件格式规范
 
 ### 1. training_dataset.json (常规训练数据)
@@ -33,20 +48,23 @@ training_repo/
         "bundle_versions": ["v1.2.0-20250620-143500"],
         "created_at": "2025-07-27 15:00:00",
         "description": "端到端网络联合训练数据集",
-        "version": "v1.2.0"
+        "version": "v1.2.0",
+        "tasks": ["god_base", "drivable_2cls"]
     },
     "dataset_index": [
         {
             "name": "enter_waiting_red2green_494",
             "obs_path": "obs://yw-ads-training-gy1/data/ide/cleantask/cc8c7fed-a3ea-438d-8650-2436001b0ae3/waiting_area/golden0520_pkl7.8_enter_waiting_red2green_clip_494_frame_25252.jsonl.shrink",
             "bundle_versions": ["v1.2.0-20250620-143500"],
-            "duplicate": 8
+            "duplicate": 8,
+            "task_tags": ["god_base", "drivable_2cls"]
         },
         {
             "name": "highway_merge_mixed_dataset",
             "obs_path": "obs://training-data/highway_merge_mixed.jsonl",
             "bundle_versions": ["v1.1.0-20250618", "v1.2.0-20250620"],
-            "duplicate": 3
+            "duplicate": 3,
+            "task_tags": ["god_base"]
         }
     ]
 }
@@ -84,18 +102,75 @@ training_repo/
 - **bundle_versions**: 对应的Bundle版本列表，支持混合版本，格式：`["v{version}-{timestamp}"]`
 - **version**: 当前训练数据集版本，语义化版本格式
 - **training_type**: 训练类型，dagger文件专用，标识为"dagger"
+- **tasks**: （可选）训练任务列表，用于说明该数据集包含的任务类型，如 `["god_base", "drivable_2cls"]`
 
 **Dataset字段：**
 - **name**: 数据集唯一名称（IDE生成或手工命名，确保唯一性）
 - **obs_path**: 数据集存储路径（生产前为空，生产后回写）
 - **bundle_versions**: 数据集来源的Bundle版本列表，支持混合版本场景
 - **duplicate**: 数据复制倍数
+- **task_tags**: （可选）该数据集适用的任务标签列表，用于多任务训练时的数据过滤，如 `["god_base"]` 或 `["god_base", "drivable_2cls"]`
 
 #### 使用场景
 
 **混合版本场景：** 数据挖掘时从多个Bundle版本中提取数据，形成新的数据集
 **DAgger训练：** 在线学习需要特殊数据处理，使用独立的dagger文件避免误加载
 **配置生产：** training_dataset.json既作为数据生产的配置输入，也作为生产结果的索引记录
+**多任务训练：** 使用 `task_tags` 字段标记数据集适用的任务类型，训练时可按任务过滤数据集
+
+#### 多任务训练示例
+
+对于支持多任务（如GOD检测和可行驶域分割）的训练场景：
+
+```json
+{
+    "meta": {
+        "release_name": "GOD_MultiTask_20251017",
+        "consumer_version": "v1.2.0",
+        "bundle_versions": ["v1.2.0-20251017-100000"],
+        "version": "v1.2.0",
+        "tasks": ["god_base", "drivable_2cls"]
+    },
+    "dataset_index": [
+        {
+            "name": "highway_god_only",
+            "obs_path": "obs://god-data/highway_god.jsonl",
+            "bundle_versions": ["v1.2.0-20251017-100000"],
+            "duplicate": 5,
+            "task_tags": ["god_base"]
+        },
+        {
+            "name": "highway_drivable_only",
+            "obs_path": "obs://dri-data/highway_drivable.jsonl",
+            "bundle_versions": ["v1.2.0-20251017-100000"],
+            "duplicate": 5,
+            "task_tags": ["drivable_2cls"]
+        },
+        {
+            "name": "urban_joint_annotated",
+            "obs_path": "obs://multi-task/urban_joint.jsonl",
+            "bundle_versions": ["v1.2.0-20251017-100000"],
+            "duplicate": 3,
+            "task_tags": ["god_base", "drivable_2cls"]
+        }
+    ]
+}
+```
+
+**训练时按任务过滤：**
+- 多任务训练：使用所有数据集（task_tags包含 "god_base" 或 "drivable_2cls" 的数据）
+- 单任务训练（仅GOD）：只加载 task_tags 包含 "god_base" 的数据集
+- 单任务训练（仅可行驶域）：只加载 task_tags 包含 "drivable_2cls" 的数据集
+
+**常用任务标签：**
+
+| 任务标签 | 说明 |
+|---------|------|
+| `multi_task` | 多任务联合训练（GOD+可行驶域） |
+| `god_base` | GOD基础训练（20cm分辨率） |
+| `god_hd` | GOD高清训练（5cm分辨率） |
+| `drivable_2cls` | 可行驶域2分类（通用场景） |
+| `drivable_multi` | 可行驶域多分类（园区场景） |
 
 ### 3. 配置文件生产流程
 
@@ -181,16 +256,27 @@ details:          # 可选，按需补充
 - 唯一交付物：某个代码仓的特定分支上的特定 commit（通过 Tag 固化）。
 - 大版本发布：在关键 Tag 基础上创建 Release（Release 是 Tag 的子集，面向对外/对内广泛消费的稳定版本）。
 
-### 分支命名
-- `feature_dataset/<topic>/<method>` 示例：`feature_dataset/toll_station/strict`
-- `experiment/<topic>/<trial>` 示例：`experiment/toll_station/ablation-01`
+### 分支命名规范
+- **功能分支**：`feature_dataset/<topic>/<method>`
+  - 示例：`feature_dataset/toll_station/strict`
+  - 用于数据集功能开发和数据策划操作
+  
+- **实验分支**：`experiment/<topic>/<trial>`
+  - 示例：`experiment/toll_station/ablation-01`
+  - 用于快速实验验证
+  
+- **主分支**：`master` 或 `main`
+  - 稳定生产版本，仅通过PR合并
+  
 - 任意分支（含 `master` 与 `feature_dataset/*`）均可直接在 IDE 中进行编辑与验证。
 
 ### Tag 规范
-- 专题数据交付：仅打 Tag，不必创建 Release。
-  - 命名：`feature_dataset/<topic>/release-YYYYMMDD`，例如：`feature_dataset/toll_station/release-20250709`
-  - 可选别名：`<topic>-<YYMMDD>`（便于人读）。
-- Tag 注释建议包含追溯元信息：
+- **专题数据交付**：仅打 Tag，不必创建 Release
+  - 命名：`feature_dataset/<topic>/release-YYYYMMDD`
+  - 示例：`feature_dataset/toll_station/release-20250709`
+  - 可选别名：`<topic>-<YYMMDD>`（便于人读）
+  
+- **Tag注释**：建议包含追溯元信息
   ```yaml
   release_name: "feature_dataset/toll_station/release-20250709"
   consumer_version: "v1.2.0"
@@ -198,16 +284,34 @@ details:          # 可选，按需补充
   training_dataset_version: "v1.2.0"
   ```
 
+#### 多任务场景的Tag命名（可选）
+针对多任务场景，Tag可包含任务类型前缀：
+- `<task_type>/release-YYYYMMDD` - 示例：`multi_task/release-20251017`
+- `<task_type>/v<MAJOR>.<MINOR>.<PATCH>` - 示例：`god_base/v1.1.0`
+- Tag注释可增加 `task_type` 和 `tasks` 字段说明任务类型
+
 ### Release 规范（大版本）
-- 何时创建：面向广泛消费、需要稳定性的里程碑版本（例如 `v1.2.0`）。
-- 与 Tag 的关系：Release 指向某个已存在的 Tag；内容应是 Tag 的严格子集和说明补充。
-- 建议命名：
-  - Release 名称：`TrainingDataset v<MAJOR>.<MINOR>.<PATCH>`（示例：`TrainingDataset v1.2.0`）
-  - 对应 Tag：`training/v<MAJOR>.<MINOR>.<PATCH>` 或具体业务自定义命名
-- Release 说明应包含：
+- **创建时机**：面向广泛消费、需要稳定性的里程碑版本（例如 `v1.2.0`）
+- **与Tag关系**：Release 指向某个已存在的 Tag
+- **命名建议**：
+  - Release名称：`TrainingDataset v<MAJOR>.<MINOR>.<PATCH>`
+  - 示例：`TrainingDataset v1.2.0`
+  - 对应Tag：`training/v<MAJOR>.<MINOR>.<PATCH>` 或具体业务自定义命名
+
+- **Release说明应包含**：
   - 基线来源：`consumer_version`、`bundle_version`
-  - 数据规模与要点：clips 统计、关键操作摘要
-- 追溯信息：Tag/Release 注释 + commit hash；可选附本次变更统计
+  - 数据规模与要点：clips统计、关键操作摘要
+  - 追溯信息：Tag/Release注释 + commit hash
+
+#### 多任务场景的Release（可选）
+针对多任务场景，Release可包含任务类型：
+- **命名格式**：`<TaskType> v<MAJOR>.<MINOR>.<PATCH>`
+  - 示例：`MultiTask v1.2.0`、`GOD-Base v1.1.0`
+  - 对应Tag：`<task_type>/v<MAJOR>.<MINOR>.<PATCH>`
+
+- **Release说明增加**：
+  - 任务类型：`task_type` 和包含的 `tasks` 列表
+  - 各任务数据分布统计
 
 ### 提交信息规范（强制）
 - 所有对数据的有效变更必须体现在 `training_dataset.json`；提交时使用结构化 Commit Message。
@@ -220,8 +324,14 @@ details:          # 可选，按需补充
   ```
 
 ### 场景与操作
-- 场景1（常规演进）：在 `master` 或 `feature_dataset/*` 分支编辑，按需打 Tag；里程碑版本创建 Release。
-- 场景2（golden 上做单点实验）：从 golden 拉 `experiment/<topic>/<trial>`，对专题分支变更做 cherry-pick；实验 Tag 仅内部可见，不创建 Release。
+- **场景1（常规演进）**：在 `master` 或 `feature_dataset/*` 分支编辑，按需打 Tag；里程碑版本创建 Release
+- **场景2（golden 上做单点实验）**：从 golden 拉 `experiment/<topic>/<trial>`，对专题分支变更做 cherry-pick；实验 Tag 仅内部可见，不创建 Release
+
+#### 多任务场景补充（可选）
+针对多任务训练，可采用任务特定分支：
+- 在 `master/<task_type>` 分支维护不同任务的数据集
+- 使用 `task_tags` 标记数据集的任务归属
+- 按需创建任务特定的Tag和Release（如 `multi_task/v1.2.0`）
 
 ### 长期规划
 - 通过 IDE/自动化纳管上述操作，校验提交模板、自动生成快照与统计，并辅助创建 Tag/Release。
