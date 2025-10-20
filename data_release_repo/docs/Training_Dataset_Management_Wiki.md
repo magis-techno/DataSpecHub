@@ -32,7 +32,7 @@ training_repo/
 **支持的任务类型**：
 - `multi_task`: 多任务联合训练（GOD+可行驶域）
 - `god_base`: GOD基础训练（20cm分辨率）
-- `god_hd`: GOD高清训练（5cm分辨率）
+- `god_hd`: GOD高精训练（5cm分辨率）
 - `drivable_2cls`: 可行驶域2分类
 - `drivable_multi`: 可行驶域多分类（园区场景）
 
@@ -168,7 +168,7 @@ training_repo/
 |---------|------|
 | `multi_task` | 多任务联合训练（GOD+可行驶域） |
 | `god_base` | GOD基础训练（20cm分辨率） |
-| `god_hd` | GOD高清训练（5cm分辨率） |
+| `god_hd` | GOD高精训练（5cm分辨率） |
 | `drivable_2cls` | 可行驶域2分类（通用场景） |
 | `drivable_multi` | 可行驶域多分类（园区场景） |
 
